@@ -56,27 +56,29 @@ export default function DashboardPage() {
     };
 
     return (
-        <div className="min-h-screen bg-white font-sans">
+        <div className="min-h-screen bg-white font-sans flex flex-col">
             {/* Desktop Navigation */}
-            <header className="hidden md:flex fixed top-0 left-0 w-full h-20 bg-white border-b-2 border-black items-center justify-between px-8 z-50">
-                <div className="flex items-center gap-12">
-                    <div className="text-2xl font-black tracking-tighter text-black flex items-center gap-3">
-                        <div className="w-10 h-10 bg-accent flex items-center justify-center">
-                            <Plus className="text-white w-6 h-6" />
+            <header className="hidden md:flex fixed top-0 left-0 w-full h-20 bg-white border-b-2 border-black z-50 justify-center">
+                <div className="w-full max-w-screen-2xl px-8 flex items-center justify-between h-full">
+                    <div className="flex items-center gap-12">
+                        <div className="text-2xl font-black tracking-tighter text-black flex items-center gap-3">
+                            <div className="w-10 h-10 bg-accent flex items-center justify-center">
+                                <Plus className="text-white w-6 h-6" />
+                            </div>
+                            NEXUS
                         </div>
-                        NEXUS
+                        <nav className="flex items-center gap-8">
+                            <Link href="/dashboard" className="text-sm font-bold text-black uppercase tracking-widest border-b-2 border-black pb-1">Dashboard</Link>
+                            <Link href="/capture" className="text-sm font-bold text-gray-400 uppercase tracking-widest hover:text-black transition-colors">Capture</Link>
+                        </nav>
                     </div>
-                    <nav className="flex items-center gap-8">
-                        <Link href="/dashboard" className="text-sm font-bold text-black uppercase tracking-widest border-b-2 border-black pb-1">Dashboard</Link>
-                        <Link href="/capture" className="text-sm font-bold text-gray-400 uppercase tracking-widest hover:text-black transition-colors">Capture</Link>
-                    </nav>
-                </div>
-                <div className="flex items-center gap-6">
-                    <Link href="/settings" className="text-black hover:text-accent transition-colors">
-                        <Settings size={24} strokeWidth={1.5} />
-                    </Link>
-                    <div className="w-10 h-10 bg-gray-100 border-2 border-black overflow-hidden">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Avatar" className="grayscale" />
+                    <div className="flex items-center gap-6">
+                        <Link href="/settings" className="text-black hover:text-accent transition-colors">
+                            <Settings size={24} strokeWidth={1.5} />
+                        </Link>
+                        <div className="w-10 h-10 bg-gray-100 border-2 border-black overflow-hidden">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Avatar" className="grayscale" />
+                        </div>
                     </div>
                 </div>
             </header>
@@ -93,8 +95,8 @@ export default function DashboardPage() {
             </header>
 
             {/* Desktop Toolbar */}
-            <div className="hidden md:flex max-w-full mt-20 border-b border-black">
-                <div className="w-full flex">
+            <div className="hidden md:flex w-full justify-center mt-20 border-b border-black">
+                <div className="w-full max-w-screen-2xl flex border-x-2 border-black">
                     <div className="relative flex-1 border-r border-black">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black" size={20} />
                         <input
@@ -146,99 +148,101 @@ export default function DashboardPage() {
             </div>
 
             {/* Content Area */}
-            <main className="w-full">
-                {filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-32 text-gray-400">
-                        <div className="w-24 h-24 border-2 border-gray-200 flex items-center justify-center mb-6">
-                            <Search size={40} className="text-gray-300" />
+            <main className="w-full flex-1 flex flex-col items-center">
+                <div className="w-full max-w-screen-2xl border-x-2 border-black flex-1">
+                    {filtered.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-32 text-gray-400">
+                            <div className="w-24 h-24 border-2 border-gray-200 flex items-center justify-center mb-6">
+                                <Search size={40} className="text-gray-300" />
+                            </div>
+                            <p className="font-mono text-sm uppercase tracking-widest">Database Empty</p>
+                            <Link href="/capture" className="mt-6 text-accent font-bold uppercase border-b-2 border-accent pb-1 hover:text-black hover:border-black transition-all">Initialize Entry</Link>
                         </div>
-                        <p className="font-mono text-sm uppercase tracking-widest">Database Empty</p>
-                        <Link href="/capture" className="mt-6 text-accent font-bold uppercase border-b-2 border-accent pb-1 hover:text-black hover:border-black transition-all">Initialize Entry</Link>
-                    </div>
-                ) : (
-                    <>
-                        {/* List View */}
-                        {viewMode === 'list' && (
-                            <div className="w-full border-t border-black md:border-t-0">
-                                {filtered.map((item, index) => (
-                                    <div
-                                        key={item.id}
-                                        onClick={() => setSelectedItem(item)}
-                                        className="group border-b border-black flex items-stretch hover:bg-muted cursor-pointer transition-colors"
-                                    >
-                                        <div className="w-24 md:w-48 border-r border-black shrink-0 relative overflow-hidden bg-gray-100">
-                                            {item.mediaContent && item.mediaType === 'url' ? (
-                                                <img src={item.mediaContent} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center">
-                                                    <LayoutGrid size={24} className="text-gray-300" />
+                    ) : (
+                        <>
+                            {/* List View */}
+                            {viewMode === 'list' && (
+                                <div className="w-full border-t border-black md:border-t-0">
+                                    {filtered.map((item, index) => (
+                                        <div
+                                            key={item.id}
+                                            onClick={() => setSelectedItem(item)}
+                                            className="group border-b border-black flex items-stretch hover:bg-muted cursor-pointer transition-colors"
+                                        >
+                                            <div className="w-24 md:w-48 border-r border-black shrink-0 relative overflow-hidden bg-gray-100">
+                                                {item.mediaContent && item.mediaType === 'url' ? (
+                                                    <img src={item.mediaContent} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <LayoutGrid size={24} className="text-gray-300" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 p-4 md:p-6 flex flex-col justify-center">
+                                                <div className="flex items-baseline gap-4 mb-2">
+                                                    <span className="font-mono text-xs text-black">NO. {String(index + 1).padStart(3, '0')}</span>
+                                                    <h3 className="text-xl md:text-2xl font-bold uppercase text-black group-hover:underline decoration-2 underline-offset-4">{item.title}</h3>
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 p-4 md:p-6 flex flex-col justify-center">
-                                            <div className="flex items-baseline gap-4 mb-2">
-                                                <span className="font-mono text-xs text-black">NO. {String(index + 1).padStart(3, '0')}</span>
-                                                <h3 className="text-xl md:text-2xl font-bold uppercase text-black group-hover:underline decoration-2 underline-offset-4">{item.title}</h3>
+                                                <p className="text-sm md:text-base text-gray-600 line-clamp-1 font-mono">{item.description}</p>
                                             </div>
-                                            <p className="text-sm md:text-base text-gray-600 line-clamp-1 font-mono">{item.description}</p>
-                                        </div>
-                                        <div className="border-l border-black p-4 md:p-6 w-48 hidden md:flex items-center justify-center">
-                                            <div className="flex flex-wrap gap-2 justify-center">
-                                                {item.tags.slice(0, 2).map(tag => (
-                                                    <span key={tag} className="border border-black px-2 py-1 text-[10px] font-bold uppercase tracking-wider hover:bg-black hover:text-white transition-colors">{tag}</span>
-                                                ))}
+                                            <div className="border-l border-black p-4 md:p-6 w-48 hidden md:flex items-center justify-center">
+                                                <div className="flex flex-wrap gap-2 justify-center">
+                                                    {item.tags.slice(0, 2).map(tag => (
+                                                        <span key={tag} className="border border-black px-2 py-1 text-[10px] font-bold uppercase tracking-wider hover:bg-black hover:text-white transition-colors">{tag}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="w-16 border-l border-black flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">
+                                                <ExternalLink size={20} />
                                             </div>
                                         </div>
-                                        <div className="w-16 border-l border-black flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">
-                                            <ExternalLink size={20} />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                    ))}
+                                </div>
+                            )}
 
-                        {/* Grid View (Swiss Style) */}
-                        {viewMode === 'grid' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 bg-black gap-[1px] border-t border-black md:border-t-0">
-                                {filtered.map((item, index) => (
-                                    <div
-                                        key={item.id}
-                                        onClick={() => setSelectedItem(item)}
-                                        className="bg-white aspect-[3/4] group cursor-pointer relative overflow-hidden flex flex-col"
-                                    >
-                                        <div className="flex-1 relative overflow-hidden border-b border-black">
-                                            {item.mediaContent && item.mediaType === 'url' ? (
-                                                <img
-                                                    src={item.mediaContent}
-                                                    alt={item.title}
-                                                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full bg-gray-50 flex items-center justify-center">
-                                                    <LayoutGrid size={48} className="text-gray-200" />
+                            {/* Grid View (Swiss Style) */}
+                            {viewMode === 'grid' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 bg-black gap-[1px] border-t border-black md:border-t-0">
+                                    {filtered.map((item, index) => (
+                                        <div
+                                            key={item.id}
+                                            onClick={() => setSelectedItem(item)}
+                                            className="bg-white aspect-[3/4] group cursor-pointer relative overflow-hidden flex flex-col"
+                                        >
+                                            <div className="flex-1 relative overflow-hidden border-b border-black">
+                                                {item.mediaContent && item.mediaType === 'url' ? (
+                                                    <img
+                                                        src={item.mediaContent}
+                                                        alt={item.title}
+                                                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full bg-gray-50 flex items-center justify-center">
+                                                        <LayoutGrid size={48} className="text-gray-200" />
+                                                    </div>
+                                                )}
+                                                <div className="absolute top-4 left-4 font-mono text-xs bg-white border border-black px-2 py-1">
+                                                    {String(index + 1).padStart(2, '0')}
                                                 </div>
-                                            )}
-                                            <div className="absolute top-4 left-4 font-mono text-xs bg-white border border-black px-2 py-1">
-                                                {String(index + 1).padStart(2, '0')}
+                                            </div>
+                                            <div className="p-6 bg-white transition-colors group-hover:bg-black group-hover:text-white h-48 flex flex-col justify-between">
+                                                <div>
+                                                    <h3 className="font-black text-xl uppercase mb-2 leading-none">{item.title}</h3>
+                                                    <p className="font-mono text-xs opacity-60 line-clamp-2 uppercase">{item.description}</p>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2 mt-4">
+                                                    {item.tags.slice(0, 3).map(tag => (
+                                                        <span key={tag} className="text-[10px] font-bold uppercase border border-current px-2 py-1">{tag}</span>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="p-6 bg-white transition-colors group-hover:bg-black group-hover:text-white h-48 flex flex-col justify-between">
-                                            <div>
-                                                <h3 className="font-black text-xl uppercase mb-2 leading-none">{item.title}</h3>
-                                                <p className="font-mono text-xs opacity-60 line-clamp-2 uppercase">{item.description}</p>
-                                            </div>
-                                            <div className="flex flex-wrap gap-2 mt-4">
-                                                {item.tags.slice(0, 3).map(tag => (
-                                                    <span key={tag} className="text-[10px] font-bold uppercase border border-current px-2 py-1">{tag}</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </>
-                )}
+                                    ))}
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
             </main>
 
             {/* Mobile Bottom FAB */}

@@ -9,7 +9,7 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen bg-white flex items-center justify-center p-4 font-sans">
-            <div className="w-full max-w-sm">
+            <div className="w-full max-w-[400px] shrink-0">
                 <div className="bg-white border-2 border-black p-8 pt-12">
                     <div className="text-left mb-10">
                         <div className="w-12 h-12 bg-accent flex items-center justify-center mb-6">
