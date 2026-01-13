@@ -9,7 +9,6 @@ import {
     LayoutGrid,
     List as ListIcon,
     Settings,
-    LogOut,
     MoreHorizontal,
     ExternalLink,
     Trash2,
@@ -18,7 +17,6 @@ import {
     Clock
 } from 'lucide-react';
 import { getInspirations, Inspiration, deleteInspiration } from '@/lib/storage';
-import { logoutAction } from '../auth/actions';
 
 export default function DashboardPage() {
     const [inspirations, setInspirations] = useState<Inspiration[]>([]);

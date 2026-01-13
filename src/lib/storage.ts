@@ -13,7 +13,13 @@ const STORAGE_KEY = 'nexus_inspirations';
 export function getInspirations(): Inspiration[] {
     if (typeof window === 'undefined') return [];
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    try {
+        return JSON.parse(stored);
+    } catch (e) {
+        console.error("Failed to parse stored inspirations:", e);
+        return [];
+    }
 }
 
 export function saveInspiration(item: Omit<Inspiration, 'id' | 'createdAt'>) {
