@@ -89,7 +89,7 @@ export default function CapturePage() {
     return (
         <div className="flex flex-col h-screen bg-white font-sans max-w-md mx-auto shadow-2xl relative overflow-hidden">
             {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-white border-b border-slate-100 flex items-center justify-between px-4">
+            <header className="shrink-0 z-50 h-14 bg-white border-b border-slate-100 flex items-center justify-between px-4">
                 <button
                     onClick={() => router.back()}
                     className="p-2 -ml-2 text-slate-400 hover:text-slate-600"
@@ -106,7 +106,7 @@ export default function CapturePage() {
                 </button>
             </header>
 
-            <div className="flex-1 overflow-y-auto pt-14 pb-10">
+            <div className="flex-1 overflow-y-auto pb-10">
                 {/* Media Zone */}
                 <div className="w-full h-[35vh] bg-slate-50 relative border-b border-slate-100 group">
                     {mediaContent ? (

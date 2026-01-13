@@ -58,7 +58,7 @@ export default function DashboardPage() {
     return (
         <div className="min-h-screen bg-white font-sans flex flex-col">
             {/* Desktop Navigation */}
-            <header className="hidden md:flex fixed top-0 left-0 w-full h-20 bg-white border-b-2 border-black z-50 justify-center">
+            <header className="hidden md:flex sticky top-0 w-full h-20 bg-white border-b-2 border-black z-50 justify-center">
                 <div className="w-full max-w-screen-2xl px-8 flex items-center justify-between h-full">
                     <div className="flex items-center gap-12">
                         <div className="text-2xl font-black tracking-tighter text-black flex items-center gap-3">
@@ -84,7 +84,7 @@ export default function DashboardPage() {
             </header>
 
             {/* Mobile Header */}
-            <header className="md:hidden fixed top-0 left-0 right-0 z-50 h-16 bg-white border-b-2 border-black flex items-center justify-between px-6">
+            <header className="md:hidden sticky top-0 z-50 h-16 bg-white border-b-2 border-black flex items-center justify-between px-6">
                 <div className="text-xl font-black tracking-tighter text-black uppercase">Modulor</div>
                 <button
                     onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
@@ -95,7 +95,7 @@ export default function DashboardPage() {
             </header>
 
             {/* Desktop Toolbar */}
-            <div className="hidden md:flex w-full justify-center mt-20 border-b border-black">
+            <div className="hidden md:flex w-full justify-center border-b border-black">
                 <div className="w-full max-w-screen-2xl flex border-x-2 border-black">
                     <div className="relative flex-1 border-r border-black">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black" size={20} />
@@ -135,7 +135,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Mobile Toolbar */}
-            <div className="md:hidden pt-20 px-4 mb-8">
+            <div className="md:hidden mt-4 px-4 mb-8">
                 <div className="relative border-b-2 border-black">
                     <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-black" size={20} />
                     <input

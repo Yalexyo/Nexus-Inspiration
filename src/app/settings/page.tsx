@@ -39,18 +39,18 @@ export default function SettingsPage() {
     return (
         <div className="min-h-screen bg-slate-50 font-sans pb-20">
             {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-white border-b border-slate-200 flex items-center px-4 md:px-6">
+            <header className="sticky top-0 z-50 h-16 bg-white border-b-2 border-black flex items-center px-4 md:px-6">
                 <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Link href="/dashboard" className="p-2 -ml-2 text-slate-400 hover:text-slate-600 transition-colors">
-                            <ArrowLeft size={20} />
+                        <Link href="/dashboard" className="p-2 -ml-2 text-black hover:bg-black hover:text-white transition-colors">
+                            <ArrowLeft size={24} />
                         </Link>
-                        <h1 className="text-xl font-bold text-slate-900 tracking-tight">Settings</h1>
+                        <h1 className="text-xl font-black text-black uppercase tracking-tighter">Settings</h1>
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-3xl mx-auto px-4 pt-24">
+            <main className="max-w-3xl mx-auto px-4 pt-8">
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="p-6 md:p-8 border-b border-slate-100">
                         <div className="flex items-center gap-3 mb-2">
