@@ -1,0 +1,64 @@
+Nexus Web ("The Workbench v2") — UX/UI 开发规范（Desktop）
+Target Platform: Desktop Browser
+Tech Stack: Next.js, Tailwind CSS, Shadcn/UI
+Core Philosophy: Immersive Workspace, No Sidebar, Top-down Navigation
+
+====================
+1. App Shell
+====================
+Root: min-h-screen bg-slate-50 font-sans
+
+Top Nav:
+fixed top-0 left-0 w-full h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm
+
+Left: Logo + Nav links
+Right: Avatar
+
+====================
+2. Toolbar
+====================
+Container:
+max-w-7xl mx-auto mt-24 mb-6 px-6 flex justify-between
+
+Left: Search + Filter
+Right: View Toggle + Add Button
+
+====================
+3. Table 模式
+====================
+Container:
+max-w-7xl mx-auto px-6 pb-20
+
+Table:
+bg-white rounded-xl border shadow-sm
+
+Cols:
+Preview | Info | Tags | Date | Actions
+
+Hover -> show actions
+
+====================
+4. Flow 模式
+====================
+Grid:
+grid-cols responsive 1/2/4/5 gap-6
+
+Card:
+aspect-[3/4] rounded-xl overflow-hidden group
+
+Hover -> overlay + zoom
+
+====================
+5. Drawer 详情
+====================
+Sheet right side 500px
+Hero image + editable form
+Delete / metadata
+
+====================
+6. ASCII
+====================
+-- TABLE --
++--------------------------------------------------+
+| PREVIEW | INFO | TAGS | DATE | ACTIONS           |
++--------------------------------------------------+

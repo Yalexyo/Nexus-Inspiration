@@ -1,0 +1,79 @@
+Nexus Mobile ("The Lens v2") — UX/UI 开发规范（Mobile）
+Target Platform: Mobile Web (Responsive, Touch-first)
+Tech Stack: Next.js, Tailwind CSS, Shadcn/UI, Lucide React Icons
+Core Philosophy: One-handed operation, High speed, Capture first, Edit later.
+
+====================
+1. 全局布局 Global Layout
+====================
+Root Container:
+min-h-screen bg-slate-50 font-sans mx-auto max-w-md shadow-2xl overflow-hidden relative
+
+Sticky Header:
+fixed top-0 left-0 right-0 z-50 h-14 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 max-w-md mx-auto
+
+Left: Logo (text-lg font-bold tracking-tight text-indigo-600)
+Right: View Toggle (List / Grid)
+
+====================
+2. Capture Page 灵感捕获
+====================
+Layout: flex flex-col h-full bg-white
+
+Header:
+Left: X Cancel
+Right: Save Button (bg-indigo-600 text-white rounded-full px-5 py-1.5 text-sm font-medium disabled:opacity-50)
+
+Media Zone:
+w-full h-[35vh] bg-slate-50 relative border-b border-slate-100
+Empty: flex flex-col items-center justify-center text-slate-400 gap-2
+Filled: img object-cover + Replace floating button
+
+Input Zone:
+flex-1 p-5 flex flex-col gap-6 overflow-y-auto
+
+Description Input:
+w-full text-lg text-slate-800 placeholder:text-slate-300 resize-none outline-none bg-transparent min-h-[80px] leading-relaxed
+On blur / debounce -> AI
+
+AI Editor:
+Skeleton -> Title Input -> Tag Editor
+
+====================
+3. List Table 模式
+====================
+List: flex flex-col divide-y divide-slate-100 bg-white pb-20
+
+Row:
+flex items-start p-3 min-h-[88px] active:bg-slate-50
+
+Visual:
+w-[64px] mr-3 img rounded-lg object-cover
+
+Content:
+flex-1 flex flex-col gap-1
+
+Meta:
+w-[60px] text-right
+
+====================
+4. Flow 模式
+====================
+Grid:
+columns-2 gap-3 p-3 pb-20 space-y-3
+
+Card:
+bg-white rounded-xl border shadow-sm overflow-hidden
+
+====================
+5. ASCII
+====================
+-- CAPTURE --
++-----------------------------+
+| X           Capture    Save |
++-----------------------------+
+|        [ Media Zone ]       |
++-----------------------------+
+| "Sunlight hitting wall..."  |
+| [Editable AI Zone]          |
++-----------------------------+
