@@ -41,7 +41,7 @@ export default function DashboardPage() {
             const q = search.toLowerCase();
             result = result.filter(i =>
                 i.title.toLowerCase().includes(q) ||
-                i.tags.some(t => t.toLowerCase().includes(q))
+                i.tags?.some(t => t.toLowerCase().includes(q))
             );
         }
         setFiltered(result);
@@ -187,7 +187,7 @@ export default function DashboardPage() {
                                             </div>
                                             <div className="border-l border-black p-4 md:p-6 w-48 hidden md:flex items-center justify-center">
                                                 <div className="flex flex-wrap gap-2 justify-center">
-                                                    {item.tags.slice(0, 2).map(tag => (
+                                                    {item.tags?.slice(0, 2).map(tag => (
                                                         <span key={tag} className="border border-black px-2 py-1 text-[10px] font-bold uppercase tracking-wider hover:bg-black hover:text-white transition-colors">{tag}</span>
                                                     ))}
                                                 </div>
@@ -231,7 +231,7 @@ export default function DashboardPage() {
                                                     <p className="font-mono text-xs opacity-60 line-clamp-2 uppercase">{item.description}</p>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 mt-4">
-                                                    {item.tags.slice(0, 3).map(tag => (
+                                                    {item.tags?.slice(0, 3).map(tag => (
                                                         <span key={tag} className="text-[10px] font-bold uppercase border border-current px-2 py-1">{tag}</span>
                                                     ))}
                                                 </div>
@@ -287,7 +287,7 @@ export default function DashboardPage() {
                                     <div className="md:col-span-1">
                                         <h3 className="font-bold uppercase text-sm mb-4">Classifiers</h3>
                                         <div className="flex flex-col gap-2 align-start">
-                                            {selectedItem.tags.map(tag => (
+                                            {selectedItem.tags?.map(tag => (
                                                 <span key={tag} className="font-mono text-xs border border-black px-2 py-1 self-start hover:bg-black hover:text-white cursor-default transition-colors">{tag}</span>
                                             ))}
                                         </div>
