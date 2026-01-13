@@ -155,9 +155,19 @@ export default function CapturePage() {
                 <div className="p-6 flex flex-col gap-8">
                     {/* User Raw Thoughts */}
                     <div className="flex flex-col gap-3">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chaos to Order</label>
+                        <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chaos to Order</label>
+                            <button
+                                onClick={handleBlurDescription}
+                                disabled={!description.trim() || description.length < 5 || isAiLoading}
+                                className="flex items-center gap-2 text-[10px] font-bold text-indigo-500 uppercase tracking-widest hover:text-indigo-700 disabled:opacity-30 transition-all group"
+                            >
+                                <Sparkles size={12} className={isAiLoading ? "animate-spin" : "group-hover:rotate-12 transition-transform"} />
+                                Magic Analyze
+                            </button>
+                        </div>
                         <textarea
-                            className="w-full text-lg md:text-xl text-slate-800 placeholder:text-slate-300 resize-none outline-none bg-transparent min-h-[120px] leading-relaxed"
+                            className="w-full text-lg md:text-xl text-slate-800 placeholder:text-slate-300 resize-none outline-none bg-transparent min-h-[120px] leading-relaxed transition-all focus:placeholder:opacity-50"
                             placeholder="Sunlight hitting a weathered brick wall in Kyoto, creating long shadows and a sense of wabi-sabi..."
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
@@ -166,21 +176,21 @@ export default function CapturePage() {
                     </div>
 
                     {/* AI Interpretation (Title) */}
-                    {(isAiLoading || title) && (
-                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    {(isAiLoading || title || description.length > 20) && (
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 pt-6 border-t border-slate-50">
                             <label className="flex items-center gap-2 text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-3">
                                 <Sparkles size={12} />
-                                AI Suggested Title
+                                {isAiLoading ? 'Analyzing Intent...' : 'Target Identity'}
                             </label>
 
                             {isAiLoading ? (
-                                <div className="h-10 w-3/4 bg-slate-100 animate-pulse rounded-lg" />
+                                <div className="h-10 w-3/4 bg-slate-50 animate-pulse rounded-lg border-2 border-dashed border-indigo-100" />
                             ) : (
                                 <input
-                                    className="w-full text-2xl font-bold text-slate-900 border-none outline-none bg-transparent placeholder:text-slate-200"
+                                    className="w-full text-2xl font-black text-black border-none outline-none bg-transparent placeholder:text-slate-200 uppercase tracking-tighter"
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
-                                    placeholder="Drafting title..."
+                                    placeholder={description.length > 5 ? "WAITING FOR AI..." : "DRAFTING IDENTITY..."}
                                 />
                             )}
                         </div>
@@ -222,6 +232,27 @@ export default function CapturePage() {
                             )}
                         </div>
                     )}
+
+                    {/* Action Zone */}
+                    <div className="pt-10 border-t-2 border-black mt-10">
+                        <button
+                            onClick={handleSave}
+                            disabled={!title || !description || isSaving}
+                            className="w-full bg-black text-white py-6 text-xl font-black uppercase tracking-[0.2em] shadow-[8px_8px_0px_rgba(0,0,0,0.1)] hover:bg-indigo-600 active:translate-y-1 active:shadow-none transition-all disabled:opacity-20 disabled:grayscale disabled:pointer-events-none flex items-center justify-center gap-4"
+                        >
+                            {isSaving ? (
+                                <Loader2 className="animate-spin" size={24} />
+                            ) : (
+                                <>
+                                    <Plus size={24} strokeWidth={3} />
+                                    Save Inspiration
+                                </>
+                            )}
+                        </button>
+                        <p className="mt-4 text-[10px] text-slate-400 font-mono text-center uppercase tracking-widest">
+                            PERSISTING TO LOCAL_DATABASE v2.0
+                        </p>
+                    </div>
                 </div>
             </div>
 
