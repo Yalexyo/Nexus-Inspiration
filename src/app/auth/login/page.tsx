@@ -8,19 +8,19 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-            <div className="w-full max-w-md">
-                <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-                    <div className="p-8 pt-12 text-center">
-                        <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-200">
-                            <Sparkles className="text-white w-8 h-8" />
+        <div className="min-h-screen bg-white flex items-center justify-center p-4 font-sans">
+            <div className="w-full max-w-sm">
+                <div className="bg-white border-2 border-black p-8 pt-12">
+                    <div className="text-left mb-10">
+                        <div className="w-12 h-12 bg-accent flex items-center justify-center mb-6">
+                            <Sparkles className="text-white w-6 h-6" />
                         </div>
-                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Nexus</h1>
-                        <p className="text-slate-500 mt-2">Enter the Inspiration Engine</p>
+                        <h1 className="text-5xl font-black text-black tracking-tighter mb-2">NEXUS</h1>
+                        <p className="text-black font-medium text-sm tracking-wide uppercase">Inspiration Engine. System v2.0</p>
                     </div>
 
                     <form
-                        className="p-8 pt-4 space-y-6"
+                        className="space-y-8"
                         action={async (formData) => {
                             setIsLoading(true);
                             try {
@@ -30,16 +30,16 @@ export default function LoginPage() {
                             }
                         }}
                     >
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1" htmlFor="username">
+                        <div className="space-y-3">
+                            <label className="text-xs font-bold text-black uppercase tracking-widest block" htmlFor="username">
                                 Identity
                             </label>
                             <input
                                 id="username"
                                 name="username"
                                 type="text"
-                                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
-                                placeholder="Your Name"
+                                className="w-full px-4 py-4 bg-white border-2 border-black text-black placeholder:text-gray-400 focus:outline-none focus:bg-muted transition-colors font-mono text-lg"
+                                placeholder="USERNAME"
                                 required
                                 autoComplete="off"
                             />
@@ -48,7 +48,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 hover:shadow-indigo-200 transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2"
+                            className="w-full bg-black text-white py-4 font-bold uppercase tracking-widest hover:bg-accent transition-colors disabled:opacity-50 flex items-center justify-center gap-2 border-2 border-black"
                         >
                             {isLoading ? (
                                 <Loader2 className="animate-spin" size={20} />
@@ -58,15 +58,15 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
-                        <p className="text-xs text-slate-400 font-medium tracking-tight">
-                            SECURED BY NEXUS PROTOCOL v2.0
+                    <div className="mt-12 pt-6 border-t-2 border-black text-left">
+                        <p className="text-[10px] text-black font-mono tracking-tight">
+                            SECURED BY NEXUS PROTOCOL
                         </p>
                     </div>
                 </div>
 
-                <p className="text-center mt-8 text-slate-300 text-sm">
-                    © 2026 Nexus Inspiration Hub
+                <p className="text-left mt-8 text-gray-500 text-xs font-mono uppercase">
+                    © 2026 Nexus Inc.
                 </p>
             </div>
         </div>

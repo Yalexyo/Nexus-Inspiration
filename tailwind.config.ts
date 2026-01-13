@@ -11,6 +11,15 @@ const config: Config = {
             colors: {
                 background: "var(--background)",
                 foreground: "var(--foreground)",
+                accent: "var(--accent)",
+                muted: "var(--muted)",
+                border: "var(--border)",
+            },
+            borderRadius: {
+                lg: "0",
+                md: "0",
+                sm: "0",
+                DEFAULT: "0",
             },
         },
     },
