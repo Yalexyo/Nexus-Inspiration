@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { USERS, login, getCurrentUser } from '@/lib/auth';
+import { USERS, login, logout, getCurrentUser } from '@/lib/auth';
 import { ArrowRight, Sparkles } from 'lucide-react';
 
 export default function LoginPage() {
@@ -10,12 +10,10 @@ export default function LoginPage() {
   const [selectedUser, setSelectedUser] = useState(USERS[0].username);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Auto-redirect if already logged in
+  // Ensure fresh session on entry
   useEffect(() => {
-    if (getCurrentUser()) {
-      router.replace('/dashboard');
-    }
-  }, [router]);
+    logout();
+  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
