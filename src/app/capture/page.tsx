@@ -126,7 +126,7 @@ export default function CapturePage() {
 
         // If it's directly an image, just use it
         if (url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
-            setAssets(prev => [...prev, { type: 'image', content: url }]);
+            setAssets(prev => [...prev, { type: 'image', content: url, preview: url }]);
             return;
         }
 
@@ -175,9 +175,9 @@ export default function CapturePage() {
                             <div className="w-full h-full flex flex-col">
                                 <div className="flex-1 min-h-0 relative group rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-200">
                                     {assets[0].type === 'video' ? (
-                                        <video src={assets[0].content} className="w-full h-full object-contain" controls />
+                                        <video src={assets[0].preview} className="w-full h-full object-contain" controls />
                                     ) : (
-                                        <img src={assets[0].content} alt="" className="w-full h-full object-contain" />
+                                        <img src={assets[0].preview} alt="" className="w-full h-full object-contain" />
                                     )}
                                     <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
@@ -234,7 +234,7 @@ export default function CapturePage() {
                                             <Play size={20} className="text-white fill-white" />
                                         </div>
                                     ) : (
-                                        <img src={ctx.content} alt="" className="w-full h-full object-cover" />
+                                        <img src={ctx.preview} alt="" className="w-full h-full object-cover" />
                                     )}
                                     <button
                                         onClick={() => removeAsset(idx + 1)}
