@@ -135,6 +135,19 @@ export async function saveInspiration(item: Omit<Inspiration, 'id' | 'createdAt'
     return data[0];
 }
 
+export async function updateInspiration(id: string, updates: Partial<Pick<Inspiration, 'title' | 'description' | 'tags'>>) {
+    const user = getCurrentUser();
+    if (!user) throw new Error("Unauthorized");
+
+    const { error } = await supabase
+        .from('inspirations')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id); // Security: Check owner
+
+    if (error) throw error;
+}
+
 export async function deleteInspiration(id: string) {
     const user = getCurrentUser();
     if (!user) throw new Error("Unauthorized");

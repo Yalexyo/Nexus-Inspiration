@@ -22,7 +22,7 @@ import {
     Film,
     LogOut
 } from 'lucide-react';
-import { getInspirations, Inspiration, deleteInspiration, MediaAsset } from '@/lib/storage';
+import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset } from '@/lib/storage';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -31,6 +31,8 @@ export default function DashboardPage() {
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
     const [selectedItem, setSelectedItem] = useState<Inspiration | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState<{ title: string; description: string; tags: string[] } | null>(null);
 
     // Load Data
     useEffect(() => {
@@ -66,6 +68,32 @@ export default function DashboardPage() {
             await deleteInspiration(id);
             setInspirations(prev => prev.filter(i => i.id !== id));
             setSelectedItem(null);
+            setIsEditing(false);
+        }
+    };
+
+    const handleEditStart = () => {
+        if (!selectedItem) return;
+        setEditForm({
+            title: selectedItem.title,
+            description: selectedItem.description,
+            tags: selectedItem.tags || []
+        });
+        setIsEditing(true);
+    };
+
+    const handleEditSave = async () => {
+        if (!selectedItem || !editForm) return;
+        try {
+            await updateInspiration(selectedItem.id, editForm);
+            // Update local state
+            const updated = { ...selectedItem, ...editForm };
+            setSelectedItem(updated); // Keep detail view open with new data
+            setInspirations(prev => prev.map(i => i.id === updated.id ? updated : i));
+            setIsEditing(false);
+        } catch (e) {
+            console.error(e);
+            alert("Failed to update inspiration: " + (e instanceof Error ? e.message : 'Unknown error'));
         }
     };
 
@@ -83,7 +111,6 @@ export default function DashboardPage() {
                         </div>
                         <nav className="flex items-center gap-6">
                             <Link href="/dashboard" className="text-sm font-bold text-slate-900 border-b-2 border-indigo-600 pb-4 mt-4">Dashboard</Link>
-                            <Link href="/capture" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors pb-4 mt-4">Capture</Link>
                         </nav>
                     </div>
                     <div className="flex items-center gap-4">
@@ -284,9 +311,25 @@ export default function DashboardPage() {
                     <div className="relative w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
                         <header className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                             <h2 className="text-lg font-bold text-slate-900">Inspiration Details</h2>
-                            <button onClick={() => setSelectedItem(null)} className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all">
-                                <X size={20} />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                {!isEditing && (
+                                    <button
+                                        onClick={handleEditStart}
+                                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-all"
+                                        title="Edit Inspiration"
+                                    >
+                                        <div className="w-5 h-5 flex items-center justify-center">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M12 20h9" />
+                                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                                            </svg>
+                                        </div>
+                                    </button>
+                                )}
+                                <button onClick={() => { setSelectedItem(null); setIsEditing(false); }} className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all">
+                                    <X size={20} />
+                                </button>
+                            </div>
                         </header>
 
                         <div className="flex-1 overflow-y-auto">
@@ -313,7 +356,6 @@ export default function DashboardPage() {
                                                     ) : (
                                                         <img src={asset.content} alt="" className="w-full h-full object-cover" />
                                                     )}
-                                                    {/* Clicking a thumb could change the primary, but for now we'll just show them */}
                                                 </div>
                                             ))}
                                         </div>
@@ -328,46 +370,115 @@ export default function DashboardPage() {
                                     <span>{new Date(selectedItem.createdAt).toLocaleDateString()}</span>
                                 </div>
 
-                                <h1 className="text-3xl font-black text-slate-900 mb-6 leading-tight">
-                                    {selectedItem.title}
-                                </h1>
+                                {isEditing && editForm ? (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Title</label>
+                                            <input
+                                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                                value={editForm.title}
+                                                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                            />
+                                        </div>
 
-                                <div className="space-y-6">
-                                    <div>
-                                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Tags & Classifiers</h3>
-                                        <div className="flex flex-wrap gap-2">
-                                            {selectedItem.tags?.map(tag => (
-                                                <span key={tag} className="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full border border-indigo-100">
-                                                    {tag}
-                                                </span>
-                                            ))}
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Detailed Description</label>
+                                            <textarea
+                                                className="w-full min-h-[150px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
+                                                value={editForm.description}
+                                                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Tags</label>
+                                            <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl min-h-[60px]">
+                                                {editForm.tags.map(tag => (
+                                                    <div key={tag} className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 bg-white text-indigo-700 border border-indigo-100 rounded-full text-xs font-bold shadow-sm">
+                                                        #{tag}
+                                                        <button
+                                                            onClick={() => setEditForm({ ...editForm, tags: editForm.tags.filter(t => t !== tag) })}
+                                                            className="p-0.5 hover:bg-slate-100 rounded-full transition-colors ml-0.5 text-slate-400 hover:text-red-500"
+                                                        >
+                                                            <X size={10} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                <button
+                                                    onClick={() => {
+                                                        const t = prompt('Add tag:');
+                                                        if (t) setEditForm({ ...editForm, tags: [...editForm.tags, t] });
+                                                    }}
+                                                    className="px-3 py-1 bg-white border border-dashed border-slate-300 rounded-full text-xs font-bold text-slate-400 hover:text-indigo-600 hover:border-indigo-300 transition-all flex items-center gap-1"
+                                                >
+                                                    <Plus size={12} /> Add Tag
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
+                                ) : (
+                                    <>
+                                        <h1 className="text-3xl font-black text-slate-900 mb-6 leading-tight">
+                                            {selectedItem.title}
+                                        </h1>
 
-                                    <div className="prose prose-slate">
-                                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Description</h3>
-                                        <p className="text-slate-600 leading-relaxed text-lg">
-                                            {selectedItem.description}
-                                        </p>
-                                    </div>
-                                </div>
+                                        <div className="space-y-6">
+                                            <div>
+                                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Tags & Classifiers</h3>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {selectedItem.tags?.map(tag => (
+                                                        <span key={tag} className="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full border border-indigo-100">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="prose prose-slate">
+                                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Description</h3>
+                                                <p className="text-slate-600 leading-relaxed text-lg whitespace-pre-wrap">
+                                                    {selectedItem.description}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
                         <footer className="p-4 border-t border-slate-100 bg-slate-50 grid grid-cols-2 gap-3">
-                            <button
-                                onClick={() => handleDelete(selectedItem.id)}
-                                className="h-12 flex items-center justify-center gap-2 font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                            >
-                                <Trash2 size={18} /> Delete
-                            </button>
-                            <a
-                                href={selectedItem.assets?.[0]?.type === 'website' ? selectedItem.assets[0].content as string : '#'}
-                                target="_blank"
-                                className={`h-12 text-white flex items-center justify-center gap-2 font-bold rounded-xl shadow-lg transition-all ${selectedItem.assets?.[0]?.type === 'website' ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200' : 'bg-slate-300 cursor-not-allowed shadow-none'}`}
-                            >
-                                <ExternalLink size={18} /> Open Source
-                            </a>
+                            {isEditing ? (
+                                <>
+                                    <button
+                                        onClick={() => setIsEditing(false)}
+                                        className="h-12 flex items-center justify-center gap-2 font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition-colors bg-white border border-slate-200"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleEditSave}
+                                        className="h-12 text-white flex items-center justify-center gap-2 font-bold rounded-xl shadow-lg shadow-indigo-200 bg-indigo-600 hover:bg-indigo-700 transition-all hover:translate-y-[-1px]"
+                                    >
+                                        Save Changes
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={() => handleDelete(selectedItem.id)}
+                                        className="h-12 flex items-center justify-center gap-2 font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                                    >
+                                        <Trash2 size={18} /> Delete
+                                    </button>
+                                    <a
+                                        href={selectedItem.assets?.[0]?.type === 'website' ? selectedItem.assets[0].content as string : '#'}
+                                        target="_blank"
+                                        className={`h-12 text-white flex items-center justify-center gap-2 font-bold rounded-xl shadow-lg transition-all ${selectedItem.assets?.[0]?.type === 'website' ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200' : 'bg-slate-300 cursor-not-allowed shadow-none'}`}
+                                    >
+                                        <ExternalLink size={18} /> Open Source
+                                    </a>
+                                </>
+                            )}
                         </footer>
                     </div>
                 </div>
