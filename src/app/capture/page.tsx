@@ -81,6 +81,10 @@ export default function CapturePage() {
                 tags
             });
             router.push('/dashboard');
+        } catch (error) {
+            console.error("Save failed:", error);
+            // Show a simple alert for now - UI could be fancier later
+            alert("Save failed! Please check your network and ensure Supabase env variables are set on Vercel.");
         } finally {
             setIsSaving(false);
         }
