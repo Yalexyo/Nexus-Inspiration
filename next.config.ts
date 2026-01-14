@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: '/capture',
         headers: [
           {
             key: 'Cross-Origin-Opener-Policy',
