@@ -84,7 +84,8 @@ export default function CapturePage() {
         } catch (error) {
             console.error("Save failed:", error);
             // Show a simple alert for now - UI could be fancier later
-            alert("Save failed! Please check your network and ensure Supabase env variables are set on Vercel.");
+            // Show specific error for better debugging
+            alert(`Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setIsSaving(false);
         }
