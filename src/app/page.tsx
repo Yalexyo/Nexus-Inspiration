@@ -40,25 +40,25 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md bg-white/80 backdrop-blur-xl rounded-[32px] shadow-2xl shadow-indigo-500/10 border border-white/50 relative overflow-hidden transition-all hover:shadow-indigo-500/20 duration-500">
 
-        {/* Header Section */}
-        <div className="pt-12 pb-8 px-8 text-center flex flex-col items-center">
-          <div className="w-20 h-20 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-6 rotate-3 hover:rotate-6 transition-transform duration-300">
-            <Sparkles className="text-white drop-shadow-md" size={40} strokeWidth={1.5} />
+        {/* Header Section - Compact */}
+        <div className="pt-8 pb-4 px-8 text-center flex flex-col items-center">
+          <div className="w-14 h-14 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-4 rotate-3 hover:rotate-6 transition-transform duration-300">
+            <Sparkles className="text-white drop-shadow-md" size={28} strokeWidth={1.5} />
           </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Nexus</h1>
-          <p className="text-slate-500 font-medium text-lg">Your Inspiration Library</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Nexus</h1>
+          <p className="text-slate-500 font-medium text-sm">Your Inspiration Library</p>
         </div>
 
-        <div className="p-8 pt-0">
-          <form onSubmit={handleLogin} className="space-y-8">
-            <div className="space-y-3">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] pl-1">Select Identity</label>
-              <div className="grid gap-3">
+        <div className="p-8 pt-2">
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] pl-1 text-center block w-full">Select Identity</label>
+              <div className="grid grid-cols-2 gap-3">
                 {USERS.map(user => (
                   <label
                     key={user.id}
-                    className={`flex items-center gap-4 p-3 rounded-2xl border-2 cursor-pointer transition-all duration-300 group ${selectedUser === user.username
-                      ? 'border-indigo-600 bg-indigo-50/50 shadow-sm'
+                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 cursor-pointer transition-all duration-200 group ${selectedUser === user.username
+                      ? 'border-indigo-600 bg-indigo-50/50 shadow-sm scale-[1.02]'
                       : 'border-transparent bg-slate-50 hover:bg-white hover:border-slate-200 hover:shadow-sm'
                       }`}
                   >
@@ -74,16 +74,9 @@ export default function LoginPage() {
                       <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full bg-white object-cover shadow-sm" />
                     </div>
 
-                    <div className="flex-1">
-                      <div className={`font-bold text-sm transition-colors ${selectedUser === user.username ? 'text-indigo-900' : 'text-slate-700'}`}>{user.name}</div>
-                      <div className="text-xs text-slate-400 font-medium group-hover:text-indigo-400 transition-colors">@{user.username}</div>
-                    </div>
-
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${selectedUser === user.username
-                      ? 'border-indigo-600 bg-indigo-600 text-white scale-100'
-                      : 'border-slate-300 bg-transparent text-transparent scale-90 opacity-0 group-hover:opacity-50'
-                      }`}>
-                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                    <div className="text-center">
+                      <div className={`font-bold text-xs transition-colors line-clamp-1 ${selectedUser === user.username ? 'text-indigo-900' : 'text-slate-700'}`}>{user.name}</div>
+                      <div className="text-[10px] text-slate-400 font-medium group-hover:text-indigo-400 transition-colors line-clamp-1">@{user.username}</div>
                     </div>
                   </label>
                 ))}
@@ -93,7 +86,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full h-14 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed group"
+              className="w-full h-12 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed group text-sm"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -101,7 +94,7 @@ export default function LoginPage() {
                 </span>
               ) : (
                 <>
-                  Enter Workspace <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                  Enter Workspace <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
