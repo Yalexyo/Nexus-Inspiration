@@ -19,7 +19,8 @@ import {
     Tag,
     Clock,
     Play,
-    Film
+    Film,
+    LogOut
 } from 'lucide-react';
 import { getInspirations, Inspiration, deleteInspiration, MediaAsset } from '@/lib/storage';
 
@@ -86,9 +87,17 @@ export default function DashboardPage() {
                         </nav>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Link href="/settings" className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all">
-                            <Settings size={20} />
-                        </Link>
+                        <button
+                            onClick={() => {
+                                const { logout } = require('@/lib/auth'); // Lazy import to avoid cycle if any
+                                logout();
+                                router.replace('/');
+                            }}
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                            title="Log Out"
+                        >
+                            <LogOut size={20} />
+                        </button>
                         <div className="w-9 h-9 bg-indigo-100 rounded-full border-2 border-white shadow-sm overflow-hidden">
                             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Avatar" />
                         </div>
