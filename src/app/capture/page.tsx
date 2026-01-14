@@ -10,8 +10,6 @@ import {
     Trash2,
     Plus,
     Loader2,
-    Video,
-    Film,
     Play
 } from 'lucide-react';
 import { getAiSuggestions } from './actions';
@@ -83,8 +81,6 @@ export default function CapturePage() {
             router.push('/dashboard');
         } catch (error) {
             console.error("Save failed:", error);
-            // Show a simple alert for now - UI could be fancier later
-            // Show specific error for better debugging
             alert(`Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setIsSaving(false);
@@ -139,7 +135,6 @@ export default function CapturePage() {
             if (data.success && data.url) {
                 setAssets(prev => [...prev, { type: 'website', content: data.url }]);
             } else {
-                // Fallback: use a generic website icon if preview fails, or just the URL
                 setAssets(prev => [...prev, { type: 'website', content: url }]);
             }
         } catch (e) {
@@ -164,7 +159,7 @@ export default function CapturePage() {
                 <div className="w-9" />
             </header>
 
-            {/* Main Content - Flex/Grid One Screen */}
+            {/* Main Content */}
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden max-w-7xl mx-auto w-full">
 
                 {/* Left: Media Zone */}
@@ -199,10 +194,12 @@ export default function CapturePage() {
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center">
-                                        <div className="w-16 h-16 bg-white rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center shadow-sm mb-4">
-                                            <ImageIcon size={24} className="text-slate-300" />
+                                        <div className="w-20 h-20 bg-white rounded-3xl border border-slate-200 flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-6 transition-transform hover:scale-105 duration-500">
+                                            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center">
+                                                <Plus size={20} className="text-indigo-600" />
+                                            </div>
                                         </div>
-                                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Primary Asset</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Visual Input Required</p>
                                     </div>
                                 )}
                             </div>
@@ -213,9 +210,9 @@ export default function CapturePage() {
                     <div className="shrink-0 p-4 md:p-6 bg-slate-50/50">
                         <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
                             <label className="shrink-0 w-20 h-20 bg-white border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-0.5 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group relative">
-                                <Plus size={20} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                                <Plus size={20} className="text-indigo-600 group-hover:text-indigo-700 transition-colors" />
                                 <span className="text-[10px] font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">Add Files</span>
-                                <span className="text-[8px] text-slate-400/70 absolute bottom-1">Max 150MB</span>
+                                <span className="text-[8px] text-slate-400/70 absolute bottom-1">Max 120MB</span>
                                 <input type="file" className="hidden" accept="image/*,video/*" multiple onChange={handleFileUpload} />
                             </label>
 
@@ -223,20 +220,14 @@ export default function CapturePage() {
                                 onClick={handleUrlClick}
                                 className="shrink-0 w-20 h-20 bg-white border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-1 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group"
                             >
-                                <LinkIcon size={20} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                                <LinkIcon size={20} className="text-indigo-600 group-hover:text-indigo-700 transition-colors" />
                                 <span className="text-[10px] font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">Add Link</span>
                             </button>
 
                             {/* Remaining Thumbnails */}
                             {assets.slice(1).map((ctx, idx) => (
                                 <div key={idx} className="shrink-0 w-20 h-20 bg-white rounded-xl border border-slate-200 overflow-hidden relative group shadow-sm">
-                                    {ctx.type === 'video' ? (
-                                        <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                                            <Play size={20} className="text-white fill-white" />
-                                        </div>
-                                    ) : (
-                                        <img src={ctx.preview} alt="" className="w-full h-full object-cover" />
-                                    )}
+                                    <img src={ctx.preview} alt="" className="w-full h-full object-cover" />
                                     <button
                                         onClick={() => removeAsset(idx + 1)}
                                         className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -249,13 +240,9 @@ export default function CapturePage() {
                     </div>
                 </div>
 
-                {/* Right: Input Zone (Scrollable content, Fixed footer) */}
+                {/* Right: Input Zone */}
                 <div className="flex-1 flex flex-col h-full bg-white md:max-w-md w-full">
-
-                    {/* Scrollable Inputs */}
                     <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6">
-
-                        {/* 01. Context */}
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">01 / Observation</label>
                             <textarea
@@ -266,7 +253,6 @@ export default function CapturePage() {
                             />
                         </div>
 
-                        {/* 02. Identity */}
                         <div className={`space-y-2 transition-all duration-300 ${hasAnalyzed || isAiLoading ? 'opacity-100' : 'opacity-40 grayscale pointer-events-none'}`}>
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">02 / Identity</label>
                             {isAiLoading ? (
@@ -281,7 +267,6 @@ export default function CapturePage() {
                             )}
                         </div>
 
-                        {/* 03. Tags */}
                         <div className={`space-y-2 transition-all duration-500 ${hasAnalyzed || isAiLoading ? 'opacity-100' : 'opacity-40 grayscale pointer-events-none'}`}>
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">03 / Classifiers</label>
                             {isAiLoading ? (
@@ -316,11 +301,9 @@ export default function CapturePage() {
                         </div>
                     </div>
 
-                    {/* Footer Actions - Dynamic Workflow */}
                     <div className="shrink-0 p-5 md:p-6 border-t border-slate-100 bg-white z-10">
                         {hasAnalyzed ? (
                             <div className="flex gap-3 animate-in slide-in-from-bottom-2 duration-300">
-                                {/* SAVE Button - Primary */}
                                 <button
                                     onClick={handleSave}
                                     disabled={!title || isSaving}
@@ -330,7 +313,6 @@ export default function CapturePage() {
                                     Save Inspiration
                                 </button>
 
-                                {/* Magic Analyze - Secondary (Re-run) */}
                                 <button
                                     onClick={handleAnalyze}
                                     disabled={isAiLoading}
@@ -341,7 +323,6 @@ export default function CapturePage() {
                                 </button>
                             </div>
                         ) : (
-                            /* Magic Analyze - Initial Action */
                             <button
                                 onClick={handleAnalyze}
                                 disabled={!description.trim() || description.length < 5 || isAiLoading}
@@ -355,7 +336,6 @@ export default function CapturePage() {
                 </div>
             </div>
 
-            {/* Global Loading Overlay (Saving) */}
             {isSaving && (
                 <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-sm flex items-center justify-center">
                     <div className="flex flex-col items-center gap-3">
