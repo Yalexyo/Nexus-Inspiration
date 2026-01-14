@@ -90,30 +90,67 @@ export default function CapturePage() {
         }
     };
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const [isCompressing, setIsCompressing] = useState(false);
+    const [compressionProgress, setCompressionProgress] = useState(0);
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
+        e.target.value = ''; // Reset input
 
-        // Reset file input value to allow selecting same file again
-        e.target.value = '';
+        for (const file of files) {
+            let fileToProcess = file;
+            const isVideo = file.type.startsWith('video/');
 
-        files.forEach(file => {
-            // 150MB Check (150 * 1024 * 1024)
-            if (file.size > 150 * 1024 * 1024) {
-                alert(`File "${file.name}" is too large! Max size is 150MB.`);
-                return;
+            // Compression Check: Video > 100MB
+            if (isVideo && file.size > 100 * 1024 * 1024) {
+                // Double check: if > 500MB, maybe just reject it to be safe for now due to memory
+                if (file.size > 500 * 1024 * 1024) {
+                    alert(`File "${file.name}" is too gigantic (>500MB)! Please make it smaller.`);
+                    continue;
+                }
+
+                setIsCompressing(true);
+                setCompressionProgress(0);
+
+                try {
+                    // Lazy load the compression module
+                    const { compressVideo } = await import('@/lib/compression');
+
+                    const compressedBlob = await compressVideo(file, (p) => {
+                        setCompressionProgress(p);
+                    });
+
+                    // Create a "File-like" object from blob to keep downstream logic consistent
+                    fileToProcess = new File([compressedBlob], `compressed_${file.name}`, {
+                        type: 'video/mp4',
+                        lastModified: Date.now()
+                    });
+
+                } catch (error) {
+                    console.error("Compression failed:", error);
+                    alert("Video compression failed. Please try a smaller file.");
+                    setIsCompressing(false);
+                    continue;
+                } finally {
+                    setIsCompressing(false);
+                }
+            }
+            // Final Guard: 150MB Limit (Post-compression check)
+            if (fileToProcess.size > 150 * 1024 * 1024) {
+                alert(`File "${fileToProcess.name}" is still too large (${(fileToProcess.size / 1024 / 1024).toFixed(0)}MB) after compression.`);
+                continue;
             }
 
-            const type = file.type.startsWith('video/') ? 'video' : 'image';
-            // Create Blob URL for instant preview (Zero-Copy)
-            const preview = URL.createObjectURL(file);
+            const type = isVideo ? 'video' : 'image';
+            const preview = URL.createObjectURL(fileToProcess);
 
             setAssets(prev => [...prev, {
                 type,
-                content: file, // Store actual File object
-                preview // Store blob URL for UI
+                content: fileToProcess,
+                preview
             }]);
-        });
+        }
     };
 
     const removeAsset = (index: number) => {
@@ -360,6 +397,29 @@ export default function CapturePage() {
                     <div className="flex flex-col items-center gap-3">
                         <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
                         <span className="font-bold text-slate-600 text-sm animate-pulse">Saving...</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Global Compression Overlay */}
+            {isCompressing && (
+                <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-md flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-4 max-w-sm w-full px-6">
+                        <div className="relative w-16 h-16 flex items-center justify-center">
+                            <div className="absolute inset-0 border-4 border-indigo-100 rounded-full" />
+                            <div className="absolute inset-0 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-xs font-bold text-indigo-600">{compressionProgress}%</span>
+                        </div>
+                        <div className="text-center space-y-1">
+                            <h3 className="font-bold text-slate-900">Optimizing Video</h3>
+                            <p className="text-xs text-slate-500">Compressing large video to fit limits... This may take a minute based on your CPU.</p>
+                        </div>
+                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-indigo-500 transition-all duration-300 ease-out"
+                                style={{ width: `${compressionProgress}%` }}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
