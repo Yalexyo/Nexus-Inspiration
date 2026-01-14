@@ -21,7 +21,9 @@ import {
     Play,
     Film,
     LogOut,
-    Check
+    Check,
+    Globe,
+    Link as LinkIcon
 } from 'lucide-react';
 import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset } from '@/lib/storage';
 
@@ -126,6 +128,86 @@ export default function DashboardPage() {
         }
 
         setEditForm(prev => prev ? { ...prev, assets: [...prev.assets, ...newAssets] } : null);
+    };
+
+    const handleAddLink = () => {
+        if (!editForm) return;
+        const url = prompt('Please enter the website URL:');
+        if (!url) return;
+
+        // Simple URL validation could go here
+
+        setEditForm(prev => prev ? {
+            ...prev,
+            assets: [...prev.assets, { type: 'website', content: url }]
+        } : null);
+    };
+
+    const renderAssetThumbnail = (asset: MediaAsset, className: string = "w-full h-full object-cover") => {
+        if (asset.type === 'video') {
+            return (
+                <div className="w-full h-full flex items-center justify-center bg-slate-900">
+                    <Play size={16} className="text-white fill-white" />
+                </div>
+            );
+        } else if (asset.type === 'website') {
+            return (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-500 gap-1 p-2 text-center">
+                    <Globe size={24} />
+                    <span className="text-[10px] leading-tight font-medium truncate w-full px-1">
+                        {typeof asset.content === 'string' ? new URL(asset.content).hostname : 'Link'}
+                    </span>
+                </div>
+            );
+        } else {
+            return (
+                <img
+                    src={asset.preview || (typeof asset.content === 'string' ? asset.content as string : '')}
+                    alt=""
+                    className={className}
+                />
+            );
+        }
+    };
+
+    const renderAssetPreview = (asset: MediaAsset) => {
+        if (asset.type === 'video') {
+            return (
+                <video
+                    src={asset.preview || (typeof asset.content === 'string' ? asset.content as string : '')}
+                    className="max-h-full max-w-full"
+                    controls
+                />
+            );
+        } else if (asset.type === 'website') {
+            return (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 gap-4">
+                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm">
+                        <Globe size={48} className="text-indigo-500" />
+                    </div>
+                    <div className="text-center max-w-md px-4">
+                        <h3 className="font-bold text-slate-900 text-lg mb-1">External Website</h3>
+                        <p className="text-sm break-all">{asset.content as string}</p>
+                    </div>
+                    <a
+                        href={asset.content as string}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                    >
+                        <ExternalLink size={16} /> Open Link
+                    </a>
+                </div>
+            );
+        } else {
+            return (
+                <img
+                    src={asset.preview || (typeof asset.content === 'string' ? asset.content as string : '')}
+                    alt=""
+                    className="max-h-full max-w-full object-contain"
+                />
+            );
+        }
     };
 
     return (
@@ -249,15 +331,7 @@ export default function DashboardPage() {
                                     >
                                         <div className="w-16 h-16 shrink-0 bg-slate-100 rounded-lg overflow-hidden relative border border-slate-100 shadow-sm">
                                             {item.assets && item.assets.length > 0 ? (
-                                                <>
-                                                    {item.assets[0].type === 'video' ? (
-                                                        <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                                                            <Play size={12} className="text-white fill-white" />
-                                                        </div>
-                                                    ) : (
-                                                        <img src={item.assets[0].content as string} alt="" className="w-full h-full object-cover" />
-                                                    )}
-                                                </>
+                                                renderAssetThumbnail(item.assets[0])
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-slate-300">
                                                     <LayoutGrid size={20} />
@@ -298,6 +372,11 @@ export default function DashboardPage() {
                                                     {item.assets[0].type === 'video' ? (
                                                         <div className="w-full h-full flex items-center justify-center bg-slate-900 group-hover:scale-105 transition-transform duration-500">
                                                             <Play size={32} className="text-white fill-white opacity-80" />
+                                                        </div>
+                                                    ) : item.assets[0].type === 'website' ? (
+                                                        <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-400 group-hover:bg-indigo-100 transition-colors">
+                                                            <Globe size={48} />
+                                                            <span className="text-xs font-bold mt-2 opacity-60">WEBSITE</span>
                                                         </div>
                                                     ) : (
                                                         <img
@@ -371,21 +450,7 @@ export default function DashboardPage() {
                                     <div className="relative aspect-video w-full flex items-center justify-center bg-black">
                                         {editForm.assets.length > 0 ? (
                                             <>
-                                                {editForm.assets[activeAssetIndex] && (
-                                                    editForm.assets[activeAssetIndex].type === 'video' ? (
-                                                        <video
-                                                            src={editForm.assets[activeAssetIndex].preview || (typeof editForm.assets[activeAssetIndex].content === 'string' ? editForm.assets[activeAssetIndex].content as string : '')}
-                                                            className="max-h-full max-w-full"
-                                                            controls
-                                                        />
-                                                    ) : (
-                                                        <img
-                                                            src={editForm.assets[activeAssetIndex].preview || (typeof editForm.assets[activeAssetIndex].content === 'string' ? editForm.assets[activeAssetIndex].content as string : '')}
-                                                            alt=""
-                                                            className="max-h-full max-w-full object-contain"
-                                                        />
-                                                    )
-                                                )}
+                                                {editForm.assets[activeAssetIndex] && renderAssetPreview(editForm.assets[activeAssetIndex])}
                                                 <button
                                                     onClick={() => {
                                                         const newAssets = editForm.assets.filter((_, i) => i !== activeAssetIndex);
@@ -412,9 +477,17 @@ export default function DashboardPage() {
                                     <div className="p-4 flex gap-3 overflow-x-auto bg-white border-t border-slate-100 scrollbar-hide items-center">
                                         <label className="shrink-0 w-24 h-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all text-slate-400 hover:text-indigo-500">
                                             <Plus size={20} />
-                                            <span className="text-[10px] font-bold">Add</span>
+                                            <span className="text-[10px] font-bold">Add File</span>
                                             <input type="file" className="hidden" accept="image/*,video/*" multiple onChange={handleAssetUpload} />
                                         </label>
+
+                                        <button
+                                            onClick={handleAddLink}
+                                            className="shrink-0 w-24 h-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all text-slate-400 hover:text-indigo-500"
+                                        >
+                                            <LinkIcon size={20} />
+                                            <span className="text-[10px] font-bold">Add Link</span>
+                                        </button>
 
                                         {editForm.assets.map((asset, idx) => (
                                             <div
@@ -422,17 +495,7 @@ export default function DashboardPage() {
                                                 onClick={() => setActiveAssetIndex(idx)}
                                                 className={`shrink-0 w-24 h-24 rounded-lg overflow-hidden border shadow-sm relative group cursor-pointer transition-all ${activeAssetIndex === idx ? 'border-2 border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-300'}`}
                                             >
-                                                {asset.type === 'video' ? (
-                                                    <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                                                        <Play size={16} className="text-white fill-white" />
-                                                    </div>
-                                                ) : (
-                                                    <img
-                                                        src={asset.preview || (typeof asset.content === 'string' ? asset.content as string : '')}
-                                                        alt=""
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                )}
+                                                {renderAssetThumbnail(asset)}
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -459,23 +522,7 @@ export default function DashboardPage() {
                                     <div className="w-full bg-slate-50 border-b border-slate-100">
                                         {/* Primary Media */}
                                         <div className="relative aspect-video w-full flex items-center justify-center bg-black">
-                                            {selectedItem.assets[activeAssetIndex] && (
-                                                selectedItem.assets[activeAssetIndex].type === 'video' ? (
-                                                    <video
-                                                        key={activeAssetIndex}
-                                                        src={selectedItem.assets[activeAssetIndex].content as string}
-                                                        className="max-h-full max-w-full"
-                                                        controls
-                                                    />
-                                                ) : (
-                                                    <img
-                                                        key={activeAssetIndex}
-                                                        src={selectedItem.assets[activeAssetIndex].content as string}
-                                                        alt=""
-                                                        className="max-h-full max-w-full object-contain"
-                                                    />
-                                                )
-                                            )}
+                                            {selectedItem.assets[activeAssetIndex] && renderAssetPreview(selectedItem.assets[activeAssetIndex])}
                                         </div>
 
                                         {/* Gallery Thumbnails (if more than 1) */}
@@ -487,17 +534,7 @@ export default function DashboardPage() {
                                                         onClick={() => setActiveAssetIndex(idx)}
                                                         className={`shrink-0 w-24 h-24 rounded-lg overflow-hidden border shadow-sm relative group cursor-pointer transition-all ${activeAssetIndex === idx ? 'border-2 border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-300'}`}
                                                     >
-                                                        {asset.type === 'video' ? (
-                                                            <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                                                                <Play size={16} className="text-white fill-white" />
-                                                            </div>
-                                                        ) : (
-                                                            <img
-                                                                src={asset.content as string}
-                                                                alt=""
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                        )}
+                                                        {renderAssetThumbnail(asset)}
                                                     </div>
                                                 ))}
                                             </div>
@@ -613,9 +650,9 @@ export default function DashboardPage() {
                                     >
                                         <Trash2 size={18} /> Delete
                                     </button>
-                                    {selectedItem.assets?.[0]?.type === 'website' ? (
+                                    {selectedItem.assets?.[activeAssetIndex]?.type === 'website' ? (
                                         <a
-                                            href={selectedItem.assets[0].content as string}
+                                            href={selectedItem.assets[activeAssetIndex].content as string}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="h-12 text-white flex items-center justify-center gap-2 font-bold rounded-xl shadow-lg bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 transition-all hover:translate-y-[-1px]"

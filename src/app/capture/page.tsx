@@ -10,7 +10,9 @@ import {
     Trash2,
     Plus,
     Loader2,
-    Play
+    Play,
+    Globe,
+    ExternalLink
 } from 'lucide-react';
 import { getAiSuggestions } from './actions';
 import { saveInspiration, MediaAsset } from '@/lib/storage';
@@ -172,6 +174,24 @@ export default function CapturePage() {
                                 <div className="flex-1 min-h-0 relative group rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-200">
                                     {assets[0].type === 'video' ? (
                                         <video src={assets[0].preview} className="w-full h-full object-contain" controls />
+                                    ) : assets[0].type === 'website' ? (
+                                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 gap-4">
+                                            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                                <Globe size={48} className="text-indigo-500" />
+                                            </div>
+                                            <div className="text-center max-w-md px-4">
+                                                <h3 className="font-bold text-slate-900 text-lg mb-1">External Website</h3>
+                                                <p className="text-sm break-all">{assets[0].content as string}</p>
+                                            </div>
+                                            <a
+                                                href={assets[0].content as string}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="mt-2 px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                                            >
+                                                <ExternalLink size={16} /> Open Link
+                                            </a>
+                                        </div>
                                     ) : (
                                         <img src={assets[0].preview} alt="" className="w-full h-full object-contain" />
                                     )}
@@ -222,7 +242,20 @@ export default function CapturePage() {
                             {/* Remaining Thumbnails */}
                             {assets.slice(1).map((ctx, idx) => (
                                 <div key={idx} className="shrink-0 w-20 h-20 bg-white rounded-xl border border-slate-200 overflow-hidden relative group shadow-sm">
-                                    <img src={ctx.preview} alt="" className="w-full h-full object-cover" />
+                                    {ctx.type === 'video' ? (
+                                        <div className="w-full h-full flex items-center justify-center bg-slate-900">
+                                            <Play size={16} className="text-white fill-white" />
+                                        </div>
+                                    ) : ctx.type === 'website' ? (
+                                        <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-500 gap-1 p-2 text-center">
+                                            <Globe size={24} />
+                                            <span className="text-[8px] leading-tight font-medium truncate w-full px-1">
+                                                {typeof ctx.content === 'string' ? new URL(ctx.content).hostname : 'Link'}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <img src={ctx.preview} alt="" className="w-full h-full object-cover" />
+                                    )}
                                     <button
                                         onClick={() => removeAsset(idx + 1)}
                                         className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
