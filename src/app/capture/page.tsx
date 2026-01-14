@@ -9,24 +9,35 @@ import {
     Sparkles,
     Trash2,
     Plus,
-    Loader2
+    Loader2,
+    Video,
+    Film,
+    Play
 } from 'lucide-react';
 import { getAiSuggestions } from './actions';
-import { saveInspiration } from '@/lib/storage';
+import { saveInspiration, MediaAsset } from '@/lib/storage';
+import { getCurrentUser } from '@/lib/auth';
 
 export default function CapturePage() {
     const router = useRouter();
 
+    useEffect(() => {
+        if (!getCurrentUser()) {
+            router.replace('/');
+        }
+    }, [router]);
+
     // Form State
     const [description, setDescription] = useState('');
-    const [mediaType, setMediaType] = useState<'url' | 'upload'>('url');
-    const [mediaContent, setMediaContent] = useState('');
+    const [assets, setAssets] = useState<MediaAsset[]>([]);
     const [title, setTitle] = useState('');
     const [tags, setTags] = useState<string[]>([]);
 
     // UI State
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isMediaLoading, setIsMediaLoading] = useState(false);
+    const [hasAnalyzed, setHasAnalyzed] = useState(false); // Track analysis state
     const [predefinedTags, setPredefinedTags] = useState<string[]>([]);
 
     useEffect(() => {
@@ -40,7 +51,7 @@ export default function CapturePage() {
         }
     }, []);
 
-    const handleBlurDescription = async () => {
+    const handleAnalyze = async () => {
         if (!description.trim() || description.length < 5 || isAiLoading) return;
 
         setIsAiLoading(true);
@@ -50,6 +61,7 @@ export default function CapturePage() {
                 setTitle(result.data.title);
                 const newTags = [result.data.primary_tag, result.data.secondary_tag].filter(Boolean);
                 setTags(prev => Array.from(new Set([...prev, ...newTags])));
+                setHasAnalyzed(true); // Enable Save button
             }
         } finally {
             setIsAiLoading(false);
@@ -62,11 +74,10 @@ export default function CapturePage() {
 
         try {
             await new Promise(r => setTimeout(r, 600)); // Smooth feeling
-            saveInspiration({
+            await saveInspiration({
                 title,
                 description,
-                mediaType,
-                mediaContent,
+                assets,
                 tags
             });
             router.push('/dashboard');
@@ -76,194 +87,263 @@ export default function CapturePage() {
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        files.forEach(file => {
             const reader = new FileReader();
             reader.onloadend = () => {
-                setMediaContent(reader.result as string);
+                const content = reader.result as string;
+                const type = file.type.startsWith('video/') ? 'video' : 'image';
+                setAssets(prev => [...prev, { type, content }]);
             };
             reader.readAsDataURL(file);
+        });
+    };
+
+    const removeAsset = (index: number) => {
+        setAssets(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleUrlClick = async () => {
+        const url = prompt('Enter website URL (e.g., Dribbble, Pinterest, Blog):');
+        if (!url) return;
+
+        // If it's directly an image, just use it
+        if (url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+            setAssets(prev => [...prev, { type: 'image', content: url }]);
+            return;
+        }
+
+        setIsMediaLoading(true);
+        try {
+            const res = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
+            const data = await res.json();
+
+            if (data.success && data.url) {
+                setAssets(prev => [...prev, { type: 'website', content: data.url }]);
+            } else {
+                // Fallback: use a generic website icon if preview fails, or just the URL
+                setAssets(prev => [...prev, { type: 'website', content: url }]);
+            }
+        } catch (e) {
+            console.error(e);
+            setAssets(prev => [...prev, { type: 'website', content: url }]);
+        } finally {
+            setIsMediaLoading(false);
         }
     };
 
     return (
-    return (
-        <div className="flex flex-col h-screen bg-white font-sans max-w-md mx-auto shadow-[0_0_40px_rgba(0,0,0,0.1)] relative overflow-hidden border-x border-slate-200">
-            {/* Header - Swiss Style: Clean, Centered, Bold */}
-            <header className="shrink-0 z-50 h-16 bg-white border-b-2 border-black flex items-center justify-between px-6">
+        <div className="h-[100dvh] w-full bg-slate-50 font-sans flex flex-col overflow-hidden">
+            {/* Header */}
+            <header className="shrink-0 h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 sticky top-0 z-50">
                 <button
                     onClick={() => router.back()}
-                    className="w-8 h-8 flex items-center justify-center hover:bg-black hover:text-white transition-colors border border-transparent hover:border-black"
+                    className="w-9 h-9 flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-900 transition-colors"
                 >
-                    <X size={24} strokeWidth={2} />
+                    <X size={20} />
                 </button>
-                <div className="text-lg font-black text-black uppercase tracking-[0.2em]">Capture</div>
-                <div className="w-8" /> {/* Spacer for balance */}
+                <div className="text-sm font-bold text-slate-900 uppercase tracking-wider">New Inspiration</div>
+                <div className="w-9" />
             </header>
 
-            <div className="flex-1 overflow-y-auto pb-10">
-                {/* Media Zone - Technical Grid Background */}
-                <div className="w-full h-[40vh] bg-[#f0f0f0] relative border-b-2 border-black group overflow-hidden">
-                    {/* CSS Grid Pattern */}
-                    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+            {/* Main Content - Flex/Grid One Screen */}
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden max-w-7xl mx-auto w-full">
 
-                    {mediaContent ? (
-                        <div className="relative w-full h-full">
-                            <img src={mediaContent} alt="" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <button
-                                    onClick={() => setMediaContent('')}
-                                    className="bg-white text-black px-6 py-3 font-mono text-xs uppercase cursor-pointer hover:bg-red-600 hover:text-white transition-colors border-2 border-transparent hover:border-white"
-                                >
-                                    Remove Asset
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-6 z-10 relative">
-                            <div className="w-20 h-20 border-2 border-slate-300 flex items-center justify-center bg-white">
-                                <ImageIcon size={32} className="text-slate-300" strokeWidth={1.5} />
-                            </div>
-                            <div className="flex flex-col items-center gap-1">
-                                <span className="font-mono text-xs uppercase tracking-widest text-slate-500">Visual Input Required</span>
-                            </div>
+                {/* Left: Media Zone */}
+                <div className="relative shrink-0 md:flex-1 h-[45vh] md:h-full bg-slate-100 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col pt-4">
 
-                            <div className="flex gap-4 mt-2">
-                                <label className="flex items-center gap-2 bg-black text-white px-6 py-3 font-mono text-xs uppercase cursor-pointer hover:bg-indigo-600 transition-colors border-2 border-transparent hover:border-indigo-600">
-                                    <Plus size={14} />
-                                    Upload
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-                                </label>
-                                <button
-                                    onClick={() => {
-                                        const url = prompt('Enter image URL:');
-                                        if (url) setMediaContent(url);
-                                    }}
-                                    className="flex items-center gap-2 bg-white text-black border-2 border-black px-6 py-3 font-mono text-xs uppercase hover:bg-black hover:text-white transition-colors"
-                                >
-                                    <LinkIcon size={14} />
-                                    URL Link
-                                </button>
+                    {/* Primary Preview Area */}
+                    <div className="flex-1 min-h-0 px-4 md:px-8 flex items-center justify-center relative">
+                        {assets.length > 0 ? (
+                            <div className="w-full h-full flex flex-col">
+                                <div className="flex-1 min-h-0 relative group rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-200">
+                                    {assets[0].type === 'video' ? (
+                                        <video src={assets[0].content} className="w-full h-full object-contain" controls />
+                                    ) : (
+                                        <img src={assets[0].content} alt="" className="w-full h-full object-contain" />
+                                    )}
+                                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={() => removeAsset(0)}
+                                            className="w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Input Zone */}
-                <div className="p-8 flex flex-col gap-10">
-                    {/* User Raw Thoughts */}
-                    <div className="flex flex-col gap-4">
-                        <div className="flex items-center justify-between border-b pb-2 border-black">
-                            <label className="font-mono text-xs font-bold text-black uppercase tracking-widest">01 / Observation</label>
-                            <button
-                                onClick={handleBlurDescription}
-                                disabled={!description.trim() || description.length < 5 || isAiLoading}
-                                className="flex items-center gap-2 font-mono text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:bg-indigo-600 hover:text-white px-2 py-1 transition-all group disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-indigo-600"
-                            >
-                                <Sparkles size={12} className={isAiLoading ? "animate-spin" : "group-hover:rotate-12 transition-transform"} />
-                                Magic Analyze
-                            </button>
-                        </div>
-                        <textarea
-                            className="w-full text-xl md:text-2xl font-serif text-black placeholder:text-gray-300 resize-none outline-none bg-transparent min-h-[140px] leading-relaxed p-0 rounded-none border-b border-gray-100 focus:border-black transition-colors"
-                            placeholder="Describe what you see..."
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            onBlur={handleBlurDescription}
-                            style={{ borderRadius: 0 }}
-                        />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-4 text-slate-400">
+                                {isMediaLoading ? (
+                                    <div className="flex flex-col items-center justify-center gap-3">
+                                        <Loader2 size={32} className="animate-spin text-indigo-500" />
+                                        <span className="text-xs font-medium text-slate-500 animate-pulse">Fetching Preview...</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-16 h-16 bg-white rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center shadow-sm mb-4">
+                                            <ImageIcon size={24} className="text-slate-300" />
+                                        </div>
+                                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Primary Asset</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
-                    {/* AI Interpretation (Title) */}
-                    {(isAiLoading || title || description.length > 20) && (
-                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                            <div className="flex items-center justify-between border-b pb-2 border-black mb-4">
-                                <label className="font-mono text-xs font-bold text-black uppercase tracking-widest">
-                                    02 / Identity
-                                </label>
-                                {isAiLoading && <span className="font-mono text-[10px] animate-pulse">PROCESSING...</span>}
-                            </div>
+                    {/* Thumbnails / Controls Area */}
+                    <div className="shrink-0 p-4 md:p-6 bg-slate-50/50">
+                        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                            <label className="shrink-0 w-20 h-20 bg-white border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group">
+                                <Plus size={20} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                                <span className="text-[10px] font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">Add Files</span>
+                                <input type="file" className="hidden" accept="image/*,video/*" multiple onChange={handleFileUpload} />
+                            </label>
 
+                            <button
+                                onClick={handleUrlClick}
+                                className="shrink-0 w-20 h-20 bg-white border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-1 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group"
+                            >
+                                <LinkIcon size={20} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                                <span className="text-[10px] font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">Add Link</span>
+                            </button>
+
+                            {/* Remaining Thumbnails */}
+                            {assets.slice(1).map((ctx, idx) => (
+                                <div key={idx} className="shrink-0 w-20 h-20 bg-white rounded-xl border border-slate-200 overflow-hidden relative group shadow-sm">
+                                    {ctx.type === 'video' ? (
+                                        <div className="w-full h-full flex items-center justify-center bg-slate-900">
+                                            <Play size={20} className="text-white fill-white" />
+                                        </div>
+                                    ) : (
+                                        <img src={ctx.content} alt="" className="w-full h-full object-cover" />
+                                    )}
+                                    <button
+                                        onClick={() => removeAsset(idx + 1)}
+                                        className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <X size={10} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right: Input Zone (Scrollable content, Fixed footer) */}
+                <div className="flex-1 flex flex-col h-full bg-white md:max-w-md w-full">
+
+                    {/* Scrollable Inputs */}
+                    <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6">
+
+                        {/* 01. Context */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">01 / Observation</label>
+                            <textarea
+                                className="w-full min-h-[100px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
+                                placeholder="Describe what you see..."
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                            />
+                        </div>
+
+                        {/* 02. Identity */}
+                        <div className={`space-y-2 transition-all duration-300 ${hasAnalyzed || isAiLoading ? 'opacity-100' : 'opacity-40 grayscale pointer-events-none'}`}>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">02 / Identity</label>
                             {isAiLoading ? (
-                                <div className="h-12 w-full bg-gray-100 animate-pulse border-l-4 border-black" />
+                                <div className="h-12 w-full bg-slate-50 rounded-xl animate-pulse" />
                             ) : (
                                 <input
-                                    className="w-full text-3xl font-black text-black border-none outline-none bg-transparent placeholder:text-gray-200 uppercase tracking-tighter"
+                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                    placeholder="AI generated title..."
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
-                                    placeholder="WAITING FOR AI..."
-                                    style={{ borderRadius: 0 }}
                                 />
                             )}
                         </div>
-                    )}
 
-                    {/* Tags Zone */}
-                    {(isAiLoading || tags.length > 0) && (
-                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                            <div className="flex items-center justify-between border-b pb-2 border-black mb-4">
-                                <label className="font-mono text-xs font-bold text-black uppercase tracking-widest">03 / Classifiers</label>
-                            </div>
-
+                        {/* 03. Tags */}
+                        <div className={`space-y-2 transition-all duration-500 ${hasAnalyzed || isAiLoading ? 'opacity-100' : 'opacity-40 grayscale pointer-events-none'}`}>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">03 / Classifiers</label>
                             {isAiLoading ? (
                                 <div className="flex gap-2">
-                                    <div className="h-8 w-24 bg-gray-100 animate-pulse border border-gray-200" />
-                                    <div className="h-8 w-32 bg-gray-100 animate-pulse border border-gray-200" />
+                                    <div className="h-7 w-20 bg-slate-50 rounded-full animate-pulse" />
+                                    <div className="h-7 w-28 bg-slate-50 rounded-full animate-pulse" />
                                 </div>
                             ) : (
-                                <div className="flex flex-wrap gap-3">
+                                <div className="flex flex-wrap gap-2">
                                     {tags.map(tag => (
-                                        <div key={tag} className="flex items-center gap-2 bg-white text-black px-3 py-1.5 font-mono text-xs border border-black hover:bg-black hover:text-white transition-colors group cursor-default">
+                                        <div key={tag} className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full text-xs font-bold animate-in zoom-in duration-300">
                                             #{tag}
                                             <button
                                                 onClick={() => setTags(tags.filter(t => t !== tag))}
-                                                className="text-gray-400 group-hover:text-white hover:text-red-500 transition-colors ml-1"
+                                                className="p-0.5 hover:bg-indigo-200 rounded-full transition-colors ml-0.5"
                                             >
-                                                <X size={12} />
+                                                <X size={10} />
                                             </button>
                                         </div>
                                     ))}
                                     <button
                                         onClick={() => {
                                             const t = prompt('Add tag:');
-                                            if (t) setTags([...tags, t.replace('#', '')]);
+                                            if (t) setTags([...tags, t]);
                                         }}
-                                        className="w-8 h-8 border border-black flex items-center justify-center text-black hover:bg-black hover:text-white transition-all"
+                                        className="h-6 w-6 flex items-center justify-center rounded-full border border-dashed border-slate-300 text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 transition-all"
                                     >
-                                        <Plus size={14} />
+                                        <Plus size={12} />
                                     </button>
                                 </div>
                             )}
                         </div>
-                    )}
+                    </div>
 
-                    {/* Action Zone */}
-                    <div className="pt-8 mt-4 border-t-2 border-black">
-                        <button
-                            onClick={handleSave}
-                            disabled={!title || !description || isSaving}
-                            className="w-full bg-black text-white py-6 text-lg font-bold font-mono uppercase tracking-widest hover:bg-indigo-600 active:translate-y-[2px] transition-all disabled:opacity-20 disabled:grayscale disabled:pointer-events-none flex items-center justify-center gap-3 border-2 border-transparent"
-                            style={{ borderRadius: 0 }}
-                        >
-                            {isSaving ? (
-                                <Loader2 className="animate-spin" size={20} />
-                            ) : (
-                                <>
-                                    <span>Save Record</span>
-                                    <Plus size={18} />
-                                </>
-                            )}
-                        </button>
+                    {/* Footer Actions - Dynamic Workflow */}
+                    <div className="shrink-0 p-5 md:p-6 border-t border-slate-100 bg-white z-10">
+                        {hasAnalyzed ? (
+                            <div className="flex gap-3 animate-in slide-in-from-bottom-2 duration-300">
+                                {/* SAVE Button - Primary */}
+                                <button
+                                    onClick={handleSave}
+                                    disabled={!title || isSaving}
+                                    className="flex-1 bg-indigo-600 text-white h-12 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:translate-y-[-1px] active:translate-y-0 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                                    Save Inspiration
+                                </button>
+
+                                {/* Magic Analyze - Secondary (Re-run) */}
+                                <button
+                                    onClick={handleAnalyze}
+                                    disabled={isAiLoading}
+                                    className="h-12 w-12 flex items-center justify-center bg-white text-indigo-600 border border-indigo-100 rounded-xl hover:bg-indigo-50 transition-colors"
+                                    title="Re-Analyze"
+                                >
+                                    <Sparkles size={18} className={isAiLoading ? "animate-spin" : ""} />
+                                </button>
+                            </div>
+                        ) : (
+                            /* Magic Analyze - Initial Action */
+                            <button
+                                onClick={handleAnalyze}
+                                disabled={!description.trim() || description.length < 5 || isAiLoading}
+                                className="w-full bg-white text-indigo-600 border-2 border-indigo-100 h-12 rounded-xl text-sm font-bold hover:bg-indigo-50 hover:border-indigo-200 focus:ring-4 focus:ring-indigo-100 transition-all disabled:opacity-50 disabled:bg-slate-50 disabled:border-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                <Sparkles size={18} className={isAiLoading ? "animate-spin" : "fill-indigo-600"} />
+                                {isAiLoading ? 'Analyzing Context...' : 'Magic Analyze'}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Visual Feedback on Save */}
+            {/* Global Loading Overlay (Saving) */}
             {isSaving && (
-                <div className="fixed inset-0 z-[100] bg-white/80 backdrop-grayscale flex items-center justify-center animate-in fade-in duration-300">
-                    <div className="bg-black text-white px-10 py-6 shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in duration-300 border-2 border-white outline outline-2 outline-black">
-                        <Sparkles className="animate-spin" size={32} />
-                        <span className="font-mono text-sm uppercase tracking-widest">Archiving Data...</span>
+                <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                        <span className="font-bold text-slate-600 text-sm animate-pulse">Saving...</span>
                     </div>
                 </div>
             )}
