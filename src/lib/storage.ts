@@ -5,7 +5,8 @@ export type AssetType = 'image' | 'video' | 'website';
 
 export interface MediaAsset {
     type: AssetType;
-    content: string; // URL string
+    content: string | File; // URL string or File object
+    preview?: string; // For UI display (blob URL)
 }
 
 export interface Inspiration {
@@ -20,22 +21,43 @@ export interface Inspiration {
 
 const STORAGE_KEY = 'nexus_inspirations';
 
-// Helper to convert base64 to Blob
+// Helper to get file extension
+function getFileExt(file: File): string {
+    const name = file.name;
+    const lastDot = name.lastIndexOf('.');
+    return lastDot === -1 ? '' : name.substring(lastDot + 1);
+}
+
+// Helper to convert base64 to Blob (Legacy support)
 async function base64ToBlob(base64: string): Promise<Blob> {
     const res = await fetch(base64);
     return await res.blob();
 }
 
-export async function uploadAsset(base64: string): Promise<string> {
-    if (!base64.startsWith('data:')) return base64; // Already a URL
-
+export async function uploadAsset(assetContent: string | File): Promise<string> {
     const user = getCurrentUser();
-    // Default to 'anon' if no user, though flow should prevent this
     const userId = user ? user.id : 'anon';
     const folder = `media/${userId}`;
 
-    const blob = await base64ToBlob(base64);
-    const fileExt = blob.type.split('/')[1];
+    let blob: Blob;
+    let fileExt: string;
+
+    if (assetContent instanceof File) {
+        blob = assetContent;
+        fileExt = getFileExt(assetContent) || assetContent.type.split('/')[1];
+    } else {
+        // Handle Base64 (Legacy or small images)
+        if (!assetContent.startsWith('data:')) return assetContent; // Already a URL
+        blob = await base64ToBlob(assetContent);
+        fileExt = blob.type.split('/')[1];
+    }
+
+    // Sanity check for file size before upload attempt (150MB limit)
+    const MAX_SIZE = 150 * 1024 * 1024;
+    if (blob.size > MAX_SIZE) {
+        throw new Error(`File too large: ${(blob.size / 1024 / 1024).toFixed(2)}MB. Max allowed is 150MB.`);
+    }
+
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = `${folder}/${fileName}`;
 

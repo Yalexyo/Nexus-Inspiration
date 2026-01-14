@@ -94,14 +94,25 @@ export default function CapturePage() {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
 
+        // Reset file input value to allow selecting same file again
+        e.target.value = '';
+
         files.forEach(file => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const content = reader.result as string;
-                const type = file.type.startsWith('video/') ? 'video' : 'image';
-                setAssets(prev => [...prev, { type, content }]);
-            };
-            reader.readAsDataURL(file);
+            // 150MB Check (150 * 1024 * 1024)
+            if (file.size > 150 * 1024 * 1024) {
+                alert(`File "${file.name}" is too large! Max size is 150MB.`);
+                return;
+            }
+
+            const type = file.type.startsWith('video/') ? 'video' : 'image';
+            // Create Blob URL for instant preview (Zero-Copy)
+            const preview = URL.createObjectURL(file);
+
+            setAssets(prev => [...prev, {
+                type,
+                content: file, // Store actual File object
+                preview // Store blob URL for UI
+            }]);
         });
     };
 
@@ -200,9 +211,10 @@ export default function CapturePage() {
                     {/* Thumbnails / Controls Area */}
                     <div className="shrink-0 p-4 md:p-6 bg-slate-50/50">
                         <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                            <label className="shrink-0 w-20 h-20 bg-white border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group">
+                            <label className="shrink-0 w-20 h-20 bg-white border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-0.5 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group relative">
                                 <Plus size={20} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
                                 <span className="text-[10px] font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">Add Files</span>
+                                <span className="text-[8px] text-slate-400/70 absolute bottom-1">Max 150MB</span>
                                 <input type="file" className="hidden" accept="image/*,video/*" multiple onChange={handleFileUpload} />
                             </label>
 
