@@ -52,10 +52,10 @@ export async function uploadAsset(assetContent: string | File): Promise<string> 
         fileExt = blob.type.split('/')[1];
     }
 
-    // Sanity check for file size before upload attempt (150MB limit)
-    const MAX_SIZE = 150 * 1024 * 1024;
+    // Sanity check for file size before upload attempt (120MB limit)
+    const MAX_SIZE = 120 * 1024 * 1024;
     if (blob.size > MAX_SIZE) {
-        throw new Error(`File too large: ${(blob.size / 1024 / 1024).toFixed(2)}MB. Max allowed is 150MB.`);
+        throw new Error(`File too large: ${(blob.size / 1024 / 1024).toFixed(2)}MB. Max allowed is 120MB.`);
     }
 
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
