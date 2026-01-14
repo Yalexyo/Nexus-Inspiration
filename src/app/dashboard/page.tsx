@@ -402,11 +402,8 @@ export default function DashboardPage() {
                                                 </button>
                                             </>
                                         ) : (
-                                            <div className="text-slate-500 flex flex-col items-center gap-2">
-                                                <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center">
-                                                    <Film size={20} className="text-slate-400" />
-                                                </div>
-                                                <span className="text-xs font-medium">No Assets</span>
+                                            <div className="flex flex-col items-center">
+                                                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Visual Input Required</p>
                                             </div>
                                         )}
                                     </div>

@@ -194,12 +194,7 @@ export default function CapturePage() {
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center">
-                                        <div className="w-20 h-20 bg-white rounded-3xl border border-slate-200 flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-6 transition-transform hover:scale-105 duration-500">
-                                            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center">
-                                                <Plus size={20} className="text-indigo-600" />
-                                            </div>
-                                        </div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Visual Input Required</p>
+                                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Visual Input Required</p>
                                     </div>
                                 )}
                             </div>
