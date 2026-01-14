@@ -353,7 +353,7 @@ export default function DashboardPage() {
                                 <Trash2 size={18} /> Delete
                             </button>
                             <a
-                                href={selectedItem.assets?.[0]?.type === 'website' ? selectedItem.assets[0].content : '#'}
+                                href={selectedItem.assets?.[0]?.type === 'website' ? selectedItem.assets[0].content as string : '#'}
                                 target="_blank"
                                 className={`h-12 text-white flex items-center justify-center gap-2 font-bold rounded-xl shadow-lg transition-all ${selectedItem.assets?.[0]?.type === 'website' ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200' : 'bg-slate-300 cursor-not-allowed shadow-none'}`}
                             >
