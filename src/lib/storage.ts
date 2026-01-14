@@ -135,13 +135,66 @@ export async function saveInspiration(item: Omit<Inspiration, 'id' | 'createdAt'
     return data[0];
 }
 
-export async function updateInspiration(id: string, updates: Partial<Pick<Inspiration, 'title' | 'description' | 'tags'>>) {
+export async function updateInspiration(id: string, updates: Partial<Pick<Inspiration, 'title' | 'description' | 'tags' | 'assets'>>) {
     const user = getCurrentUser();
     if (!user) throw new Error("Unauthorized");
 
+    // 1. If modifying assets, perform Diff & Cleanup first
+    if (updates.assets) {
+        // Fetch current state to compare
+        const { data: current, error: fetchError } = await supabase
+            .from('inspirations')
+            .select('assets')
+            .eq('id', id)
+            .single();
+
+        if (!fetchError && current && current.assets) {
+            const currentAssets = current.assets as MediaAsset[];
+            const newAssetContent = updates.assets.map(a => a.content);
+
+            // Find assets that are in current but NOT in new (removed)
+            // We only care about URLs (strings), not new Files
+            const bucketPath = '/storage/v1/object/public/media/';
+            const pathsToDelete: string[] = [];
+
+            currentAssets.forEach(oldAsset => {
+                const oldContent = oldAsset.content;
+                // If it's a URL and not present in the new list
+                if (typeof oldContent === 'string' && !newAssetContent.includes(oldContent)) {
+                    if (oldContent.includes(bucketPath)) {
+                        const parts = oldContent.split(bucketPath);
+                        if (parts.length > 1) {
+                            pathsToDelete.push(decodeURIComponent(parts[1]));
+                        }
+                    }
+                }
+            });
+
+            // Delete removed files from storage
+            if (pathsToDelete.length > 0) {
+                console.log("Cleaning up removed assets:", pathsToDelete);
+                await supabase.storage.from('media').remove(pathsToDelete);
+            }
+        }
+    }
+
+    // 2. Process uploads for NEW assets (File objects)
+    let processedUpdates: any = { ...updates };
+
+    if (updates.assets) {
+        const processedAssets = await Promise.all(
+            updates.assets.map(async (asset) => ({
+                type: asset.type,
+                content: await uploadAsset(asset.content)
+            }))
+        );
+        processedUpdates.assets = processedAssets;
+    }
+
+    // 3. Update DB
     const { error } = await supabase
         .from('inspirations')
-        .update(updates)
+        .update(processedUpdates)
         .eq('id', id)
         .eq('user_id', user.id); // Security: Check owner
 
