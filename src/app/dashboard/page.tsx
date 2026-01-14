@@ -189,14 +189,6 @@ export default function DashboardPage() {
                         <h3 className="font-bold text-slate-900 text-lg mb-1">External Website</h3>
                         <p className="text-sm break-all">{asset.content as string}</p>
                     </div>
-                    <a
-                        href={asset.content as string}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors flex items-center gap-2"
-                    >
-                        <ExternalLink size={16} /> Open Link
-                    </a>
                 </div>
             );
         } else {
@@ -626,7 +618,7 @@ export default function DashboardPage() {
                             </div>
                         </div>
 
-                        <footer className="p-4 border-t border-slate-100 bg-slate-50 grid grid-cols-2 gap-3">
+                        <footer className={`p-4 border-t border-slate-100 bg-slate-50 ${isEditing ? 'grid grid-cols-2 gap-3' : 'flex'}`}>
                             {isEditing ? (
                                 <>
                                     <button
@@ -643,28 +635,12 @@ export default function DashboardPage() {
                                     </button>
                                 </>
                             ) : (
-                                <>
-                                    <button
-                                        onClick={() => handleDelete(selectedItem.id)}
-                                        className="h-12 flex items-center justify-center gap-2 font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                                    >
-                                        <Trash2 size={18} /> Delete
-                                    </button>
-                                    {selectedItem.assets?.[activeAssetIndex]?.type === 'website' ? (
-                                        <a
-                                            href={selectedItem.assets[activeAssetIndex].content as string}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="h-12 text-white flex items-center justify-center gap-2 font-bold rounded-xl shadow-lg bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 transition-all hover:translate-y-[-1px]"
-                                        >
-                                            <ExternalLink size={18} /> Visit Source
-                                        </a>
-                                    ) : (
-                                        <div className="h-12 bg-slate-200 text-slate-400 flex items-center justify-center gap-2 font-bold rounded-xl cursor-default opacity-60">
-                                            <ExternalLink size={18} /> Visit Source
-                                        </div>
-                                    )}
-                                </>
+                                <button
+                                    onClick={() => handleDelete(selectedItem.id)}
+                                    className="h-12 w-full flex items-center justify-center gap-2 font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                                >
+                                    <Trash2 size={18} /> Delete Inspiration
+                                </button>
                             )}
                         </footer>
                     </div>
