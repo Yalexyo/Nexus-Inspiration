@@ -152,11 +152,55 @@ export async function deleteInspiration(id: string) {
     const user = getCurrentUser();
     if (!user) throw new Error("Unauthorized");
 
+    // 1. Fetch assets to clean up storage
+    const { data: item, error: fetchError } = await supabase
+        .from('inspirations')
+        .select('assets')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+
+    if (fetchError) {
+        // If not found, strict deletion might fail, but let's try deleting the row anyway just in case
+        console.warn("Could not fetch item for asset cleanup:", fetchError);
+    } else if (item && item.assets) {
+        // 2. Extract paths for files hosted in our 'media' bucket
+        const pathsToDelete: string[] = [];
+        const projectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+        // Helper to extract path from full URL
+        // URL format: https://[project].supabase.co/storage/v1/object/public/media/[user_id]/[filename]
+        const bucketPath = '/storage/v1/object/public/media/';
+
+        (item.assets as MediaAsset[]).forEach(asset => {
+            if (typeof asset.content === 'string' && asset.content.includes(bucketPath)) {
+                // Split by bucket path and decode URI components just in case
+                const parts = asset.content.split(bucketPath);
+                if (parts.length > 1) {
+                    pathsToDelete.push(decodeURIComponent(parts[1]));
+                }
+            }
+        });
+
+        if (pathsToDelete.length > 0) {
+            const { error: storageError } = await supabase
+                .storage
+                .from('media')
+                .remove(pathsToDelete);
+
+            if (storageError) {
+                console.error("Failed to cleanup files:", storageError);
+                // We continue to delete the row even if storage cleanup fails (orphan files are better than zombie rows)
+            }
+        }
+    }
+
+    // 3. Delete the DB Row
     const { error } = await supabase
         .from('inspirations')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id); // Security: Check owner
+        .eq('user_id', user.id);
 
     if (error) throw error;
 }

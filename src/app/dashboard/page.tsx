@@ -64,11 +64,16 @@ export default function DashboardPage() {
     }, [search, inspirations]);
 
     const handleDelete = async (id: string) => {
-        if (confirm('Are you sure you want to delete this inspiration?')) {
-            await deleteInspiration(id);
-            setInspirations(prev => prev.filter(i => i.id !== id));
-            setSelectedItem(null);
-            setIsEditing(false);
+        if (confirm('Are you sure you want to delete this inspiration? This will permanently delete the content from the database and storage.')) {
+            try {
+                await deleteInspiration(id);
+                setInspirations(prev => prev.filter(i => i.id !== id));
+                setSelectedItem(null);
+                setIsEditing(false);
+            } catch (e) {
+                console.error(e);
+                alert("Failed to delete inspiration: " + (e instanceof Error ? e.message : 'Unknown error'));
+            }
         }
     };
 
