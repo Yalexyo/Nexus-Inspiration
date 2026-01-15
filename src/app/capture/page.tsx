@@ -135,7 +135,8 @@ export default function CapturePage() {
             const data = await res.json();
 
             if (data.success && data.url) {
-                setAssets(prev => [...prev, { type: 'website', content: data.url }]);
+                // Store the original URL in content, and the preview/screenshot in preview
+                setAssets(prev => [...prev, { type: 'website', content: url, preview: data.url }]);
             } else {
                 setAssets(prev => [...prev, { type: 'website', content: url }]);
             }
