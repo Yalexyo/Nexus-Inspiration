@@ -189,6 +189,14 @@ export default function DashboardPage() {
                         <h3 className="font-bold text-slate-900 text-lg mb-1">External Website</h3>
                         <p className="text-sm break-all">{asset.content as string}</p>
                     </div>
+                    <a
+                        href={asset.content as string}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                    >
+                        <ExternalLink size={16} /> Open Link
+                    </a>
                 </div>
             );
         } else {
