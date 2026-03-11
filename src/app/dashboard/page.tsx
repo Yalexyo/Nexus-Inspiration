@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, USERS } from '@/lib/auth';
 import { Button } from "@/components/ui/button";
 import {
     Plus,
@@ -37,6 +37,14 @@ export default function DashboardPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState<{ title: string; description: string; tags: string[]; assets: MediaAsset[] } | null>(null);
     const [activeAssetIndex, setActiveAssetIndex] = useState(0);
+    const [currentUserId, setCurrentUserId] = useState<string>('');
+
+    const getOwnerName = (userId: string) => {
+        const user = USERS.find(u => u.id === userId);
+        return user ? user.name : userId;
+    };
+
+    const isOwner = (item: Inspiration) => currentUserId === item.user_id;
 
     // Auth Check
     useEffect(() => {
@@ -45,6 +53,7 @@ export default function DashboardPage() {
             router.replace('/');
             return;
         }
+        setCurrentUserId(user.id);
 
         const load = async () => {
             const data = await getInspirations();
@@ -422,7 +431,7 @@ export default function DashboardPage() {
                         <header className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                             <h2 className="text-lg font-bold text-slate-900">Inspiration Details</h2>
                             <div className="flex items-center gap-2">
-                                {!isEditing && (
+                                {!isEditing && isOwner(selectedItem) && (
                                     <button
                                         onClick={handleEditStart}
                                         className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-all"
@@ -547,6 +556,8 @@ export default function DashboardPage() {
                                 <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
                                     <span className="bg-slate-100 px-2 py-1 rounded-md text-slate-500">#{selectedItem.id.substring(0, 6)}</span>
                                     <span>•</span>
+                                    <span>{getOwnerName(selectedItem.user_id)}</span>
+                                    <span>•</span>
                                     <span>{new Date(selectedItem.createdAt).toLocaleDateString()}</span>
                                 </div>
 
@@ -642,13 +653,17 @@ export default function DashboardPage() {
                                         Save Changes
                                     </button>
                                 </>
-                            ) : (
+                            ) : isOwner(selectedItem) ? (
                                 <button
                                     onClick={() => handleDelete(selectedItem.id)}
                                     className="h-12 w-full flex items-center justify-center gap-2 font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                                 >
                                     <Trash2 size={18} /> Delete Inspiration
                                 </button>
+                            ) : (
+                                <div className="h-12 w-full flex items-center justify-center text-sm text-slate-400">
+                                    Shared by {getOwnerName(selectedItem.user_id)}
+                                </div>
                             )}
                         </footer>
                     </div>

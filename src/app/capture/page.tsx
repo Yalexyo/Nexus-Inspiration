@@ -6,7 +6,6 @@ import {
     X,
     Image as ImageIcon,
     Link as LinkIcon,
-    Sparkles,
     Trash2,
     Plus,
     Loader2,
@@ -14,7 +13,6 @@ import {
     Globe,
     ExternalLink
 } from 'lucide-react';
-import { getAiSuggestions } from './actions';
 import { saveInspiration, MediaAsset } from '@/lib/storage';
 import { getCurrentUser } from '@/lib/auth';
 
@@ -34,39 +32,8 @@ export default function CapturePage() {
     const [tags, setTags] = useState<string[]>([]);
 
     // UI State
-    const [isAiLoading, setIsAiLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isMediaLoading, setIsMediaLoading] = useState(false);
-    const [hasAnalyzed, setHasAnalyzed] = useState(false); // Track analysis state
-    const [predefinedTags, setPredefinedTags] = useState<string[]>([]);
-
-    useEffect(() => {
-        const stored = localStorage.getItem('nexus_user_tags');
-        if (stored) {
-            try {
-                setPredefinedTags(JSON.parse(stored));
-            } catch (e) {
-                console.error("Failed to parse tags", e);
-            }
-        }
-    }, []);
-
-    const handleAnalyze = async () => {
-        if (!description.trim() || description.length < 5 || isAiLoading) return;
-
-        setIsAiLoading(true);
-        try {
-            const result = await getAiSuggestions(description, predefinedTags);
-            if (result.success && result.data) {
-                setTitle(result.data.title);
-                const newTags = [result.data.primary_tag, result.data.secondary_tag].filter(Boolean);
-                setTags(prev => Array.from(new Set([...prev, ...newTags])));
-                setHasAnalyzed(true); // Enable Save button
-            }
-        } finally {
-            setIsAiLoading(false);
-        }
-    };
 
     const handleSave = async () => {
         if (!title || !description) return;
@@ -282,85 +249,52 @@ export default function CapturePage() {
                             />
                         </div>
 
-                        <div className={`space-y-2 transition-all duration-300 ${hasAnalyzed || isAiLoading ? 'opacity-100' : 'opacity-40 grayscale pointer-events-none'}`}>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">02 / Identity</label>
-                            {isAiLoading ? (
-                                <div className="h-12 w-full bg-slate-50 rounded-xl animate-pulse" />
-                            ) : (
-                                <input
-                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                                    placeholder="AI generated title..."
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                />
-                            )}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">02 / Title</label>
+                            <input
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                placeholder="Give it a name..."
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                            />
                         </div>
 
-                        <div className={`space-y-2 transition-all duration-500 ${hasAnalyzed || isAiLoading ? 'opacity-100' : 'opacity-40 grayscale pointer-events-none'}`}>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">03 / Classifiers</label>
-                            {isAiLoading ? (
-                                <div className="flex gap-2">
-                                    <div className="h-7 w-20 bg-slate-50 rounded-full animate-pulse" />
-                                    <div className="h-7 w-28 bg-slate-50 rounded-full animate-pulse" />
-                                </div>
-                            ) : (
-                                <div className="flex flex-wrap gap-2">
-                                    {tags.map(tag => (
-                                        <div key={tag} className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full text-xs font-bold animate-in zoom-in duration-300">
-                                            #{tag}
-                                            <button
-                                                onClick={() => setTags(tags.filter(t => t !== tag))}
-                                                className="p-0.5 hover:bg-indigo-200 rounded-full transition-colors ml-0.5"
-                                            >
-                                                <X size={10} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    <button
-                                        onClick={() => {
-                                            const t = prompt('Add tag:');
-                                            if (t) setTags([...tags, t]);
-                                        }}
-                                        className="h-6 w-6 flex items-center justify-center rounded-full border border-dashed border-slate-300 text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 transition-all"
-                                    >
-                                        <Plus size={12} />
-                                    </button>
-                                </div>
-                            )}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">03 / Tags</label>
+                            <div className="flex flex-wrap gap-2">
+                                {tags.map(tag => (
+                                    <div key={tag} className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full text-xs font-bold animate-in zoom-in duration-300">
+                                        #{tag}
+                                        <button
+                                            onClick={() => setTags(tags.filter(t => t !== tag))}
+                                            className="p-0.5 hover:bg-indigo-200 rounded-full transition-colors ml-0.5"
+                                        >
+                                            <X size={10} />
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    onClick={() => {
+                                        const t = prompt('Add tag:');
+                                        if (t) setTags([...tags, t]);
+                                    }}
+                                    className="h-6 w-6 flex items-center justify-center rounded-full border border-dashed border-slate-300 text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 transition-all"
+                                >
+                                    <Plus size={12} />
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <div className="shrink-0 p-5 md:p-6 border-t border-slate-100 bg-white z-10">
-                        {hasAnalyzed ? (
-                            <div className="flex gap-3 animate-in slide-in-from-bottom-2 duration-300">
-                                <button
-                                    onClick={handleSave}
-                                    disabled={!title || isSaving}
-                                    className="flex-1 bg-indigo-600 text-white h-12 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:translate-y-[-1px] active:translate-y-0 transition-all flex items-center justify-center gap-2"
-                                >
-                                    {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                                    Save Inspiration
-                                </button>
-
-                                <button
-                                    onClick={handleAnalyze}
-                                    disabled={isAiLoading}
-                                    className="h-12 w-12 flex items-center justify-center bg-white text-indigo-600 border border-indigo-100 rounded-xl hover:bg-indigo-50 transition-colors"
-                                    title="Re-Analyze"
-                                >
-                                    <Sparkles size={18} className={isAiLoading ? "animate-spin" : ""} />
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={handleAnalyze}
-                                disabled={!description.trim() || description.length < 5 || isAiLoading}
-                                className="w-full bg-white text-indigo-600 border-2 border-indigo-100 h-12 rounded-xl text-sm font-bold hover:bg-indigo-50 hover:border-indigo-200 focus:ring-4 focus:ring-indigo-100 transition-all disabled:opacity-50 disabled:bg-slate-50 disabled:border-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                <Sparkles size={18} className={isAiLoading ? "animate-spin" : "fill-indigo-600"} />
-                                {isAiLoading ? 'Analyzing Context...' : 'Magic Analyze'}
-                            </button>
-                        )}
+                        <button
+                            onClick={handleSave}
+                            disabled={!title.trim() || !description.trim() || isSaving}
+                            className="w-full bg-indigo-600 text-white h-12 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:translate-y-[-1px] active:translate-y-0 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                            Save Inspiration
+                        </button>
                     </div>
                 </div>
             </div>

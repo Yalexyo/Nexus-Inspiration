@@ -100,11 +100,6 @@ export async function getInspirations(): Promise<Inspiration[]> {
         .select('*')
         .order('created_at', { ascending: false });
 
-    // Only filter by user_id if NOT in God Mode
-    if (user.id !== 'god') {
-        query = query.eq('user_id', user.id);
-    }
-
     const { data, error } = await query;
 
     if (error) {
