@@ -38,6 +38,7 @@ export default function DashboardPage() {
     const [editForm, setEditForm] = useState<{ title: string; description: string; tags: string[]; assets: MediaAsset[]; category: Category } | null>(null);
     const [activeAssetIndex, setActiveAssetIndex] = useState(0);
     const [currentUserId, setCurrentUserId] = useState<string>('');
+    const [editTagInput, setEditTagInput] = useState('');
 
     const getOwnerName = (userId: string) => {
         const users = getUsers();
@@ -102,6 +103,7 @@ export default function DashboardPage() {
             category: selectedItem.category || CATEGORIES[0]
         });
         setIsEditing(true);
+        setEditTagInput('');
         setActiveAssetIndex(0); // Reset preview to first item
     };
 
@@ -626,14 +628,35 @@ export default function DashboardPage() {
                                                 ))}
                                                 <button
                                                     onClick={() => {
-                                                        const t = prompt('Add tag:');
-                                                        if (t) setEditForm({ ...editForm, tags: [...editForm.tags, t] });
+                                                        const t = editTagInput.trim();
+                                                        if (t && !editForm.tags.includes(t)) {
+                                                            setEditForm({ ...editForm, tags: [...editForm.tags, t] });
+                                                            setEditTagInput('');
+                                                        }
                                                     }}
-                                                    className="px-3 py-1 bg-white border border-dashed border-slate-300 rounded-full text-xs font-bold text-slate-400 hover:text-indigo-600 hover:border-indigo-300 transition-all flex items-center gap-1"
+                                                    disabled={!editTagInput.trim()}
+                                                    className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-bold hover:bg-indigo-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                                                 >
-                                                    <Plus size={12} /> Add Tag
+                                                    <Plus size={12} /> Add
                                                 </button>
                                             </div>
+                                            <input
+                                                type="text"
+                                                value={editTagInput}
+                                                onChange={(e) => setEditTagInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        const t = editTagInput.trim();
+                                                        if (t && !editForm.tags.includes(t)) {
+                                                            setEditForm({ ...editForm, tags: [...editForm.tags, t] });
+                                                            setEditTagInput('');
+                                                        }
+                                                    }
+                                                }}
+                                                placeholder="Type a tag and press Enter..."
+                                                className="w-full h-9 px-3 mt-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                            />
                                         </div>
                                     </div>
                                 ) : (

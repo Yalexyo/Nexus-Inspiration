@@ -31,6 +31,7 @@ export default function CapturePage() {
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState<Category>(CATEGORIES[0]);
     const [tags, setTags] = useState<string[]>([]);
+    const [tagInput, setTagInput] = useState('');
 
     // UI State
     const [isSaving, setIsSaving] = useState(false);
@@ -242,17 +243,7 @@ export default function CapturePage() {
                 <div className="flex-1 flex flex-col h-full bg-white md:max-w-md w-full">
                     <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">01 / Observation</label>
-                            <textarea
-                                className="w-full min-h-[100px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
-                                placeholder="Describe what you see..."
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">02 / Category</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">01 / Category</label>
                             <div className="grid grid-cols-2 gap-2">
                                 {CATEGORIES.map(cat => (
                                     <button
@@ -272,7 +263,7 @@ export default function CapturePage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">03 / Title</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">02 / Title</label>
                             <input
                                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                                 placeholder="Give it a name..."
@@ -282,8 +273,18 @@ export default function CapturePage() {
                         </div>
 
                         <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">03 / Description</label>
+                            <textarea
+                                className="w-full min-h-[100px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
+                                placeholder="Describe what you see..."
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">04 / Custom Tags</label>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2 items-center">
                                 {tags.map(tag => (
                                     <div key={tag} className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full text-xs font-bold animate-in zoom-in duration-300">
                                         #{tag}
@@ -295,14 +296,38 @@ export default function CapturePage() {
                                         </button>
                                     </div>
                                 ))}
-                                <button
-                                    onClick={() => {
-                                        const t = prompt('Add tag:');
-                                        if (t) setTags([...tags, t]);
+                            </div>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={tagInput}
+                                    onChange={(e) => setTagInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            const t = tagInput.trim();
+                                            if (t && !tags.includes(t)) {
+                                                setTags([...tags, t]);
+                                                setTagInput('');
+                                            }
+                                        }
                                     }}
-                                    className="h-6 w-6 flex items-center justify-center rounded-full border border-dashed border-slate-300 text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 transition-all"
+                                    placeholder="Type a tag and press Enter..."
+                                    className="flex-1 h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const t = tagInput.trim();
+                                        if (t && !tags.includes(t)) {
+                                            setTags([...tags, t]);
+                                            setTagInput('');
+                                        }
+                                    }}
+                                    disabled={!tagInput.trim()}
+                                    className="h-9 px-3 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                                 >
-                                    <Plus size={12} />
+                                    <Plus size={14} /> Add
                                 </button>
                             </div>
                         </div>
