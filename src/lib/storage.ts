@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { getSupabaseConfigError, supabase } from './supabase';
 import { getCurrentUser } from './auth';
 
 export type AssetType = 'image' | 'video' | 'website';
@@ -21,6 +21,19 @@ export interface Inspiration {
 
 const STORAGE_KEY = 'nexus_inspirations';
 
+function ensureSupabaseConfigured() {
+    const configError = getSupabaseConfigError();
+    if (configError) throw configError;
+}
+
+function toActionableError(error: unknown): Error {
+    if (error instanceof TypeError && error.message.toLowerCase().includes('failed to fetch')) {
+        return new Error('Cannot reach Supabase. Verify NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel and make sure Supabase project is reachable.');
+    }
+
+    return error instanceof Error ? error : new Error('Unexpected error while saving inspiration.');
+}
+
 // Helper to get file extension
 function getFileExt(file: File): string {
     const name = file.name;
@@ -35,6 +48,8 @@ async function base64ToBlob(base64: string): Promise<Blob> {
 }
 
 export async function uploadAsset(assetContent: string | File): Promise<string> {
+    ensureSupabaseConfigured();
+
     const user = getCurrentUser();
     const userId = user ? user.id : 'anon';
     const folder = `media/${userId}`;
@@ -75,6 +90,8 @@ export async function uploadAsset(assetContent: string | File): Promise<string> 
 }
 
 export async function getInspirations(): Promise<Inspiration[]> {
+    ensureSupabaseConfigured();
+
     const user = getCurrentUser();
     if (!user) return [];
 
@@ -107,35 +124,43 @@ export async function getInspirations(): Promise<Inspiration[]> {
 }
 
 export async function saveInspiration(item: Omit<Inspiration, 'id' | 'createdAt' | 'user_id'>) {
+    ensureSupabaseConfigured();
+
     const user = getCurrentUser();
     if (!user) throw new Error("User must be logged in to save.");
 
-    // 1. Process Assets: Upload local base64 to Supabase Storage
-    const processedAssets = await Promise.all(
-        item.assets.map(async (asset) => ({
-            type: asset.type,
-            content: await uploadAsset(asset.content)
-        }))
-    );
+    try {
+        // 1. Process Assets: Upload local base64 to Supabase Storage
+        const processedAssets = await Promise.all(
+            item.assets.map(async (asset) => ({
+                type: asset.type,
+                content: await uploadAsset(asset.content)
+            }))
+        );
 
-    // 2. Save to Supabase DB with user_id
-    const { data, error } = await supabase
-        .from('inspirations')
-        .insert([{
-            user_id: user.id, // Set Owner
-            title: item.title,
-            description: item.description,
-            assets: processedAssets,
-            tags: item.tags
-        }])
-        .select();
+        // 2. Save to Supabase DB with user_id
+        const { data, error } = await supabase
+            .from('inspirations')
+            .insert([{
+                user_id: user.id, // Set Owner
+                title: item.title,
+                description: item.description,
+                assets: processedAssets,
+                tags: item.tags
+            }])
+            .select();
 
-    if (error) throw error;
+        if (error) throw error;
 
-    return data[0];
+        return data[0];
+    } catch (error) {
+        throw toActionableError(error);
+    }
 }
 
 export async function updateInspiration(id: string, updates: Partial<Pick<Inspiration, 'title' | 'description' | 'tags' | 'assets'>>) {
+    ensureSupabaseConfigured();
+
     const user = getCurrentUser();
     if (!user) throw new Error("Unauthorized");
 
@@ -202,6 +227,8 @@ export async function updateInspiration(id: string, updates: Partial<Pick<Inspir
 }
 
 export async function deleteInspiration(id: string) {
+    ensureSupabaseConfigured();
+
     const user = getCurrentUser();
     if (!user) throw new Error("Unauthorized");
 
