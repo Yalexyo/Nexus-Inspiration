@@ -25,7 +25,7 @@ import {
     Globe,
     Link as LinkIcon
 } from 'lucide-react';
-import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset } from '@/lib/storage';
+import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset, CATEGORIES, Category } from '@/lib/storage';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -35,7 +35,7 @@ export default function DashboardPage() {
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
     const [selectedItem, setSelectedItem] = useState<Inspiration | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState<{ title: string; description: string; tags: string[]; assets: MediaAsset[] } | null>(null);
+    const [editForm, setEditForm] = useState<{ title: string; description: string; tags: string[]; assets: MediaAsset[]; category: Category } | null>(null);
     const [activeAssetIndex, setActiveAssetIndex] = useState(0);
     const [currentUserId, setCurrentUserId] = useState<string>('');
 
@@ -71,6 +71,7 @@ export default function DashboardPage() {
             const q = search.toLowerCase();
             result = result.filter(i =>
                 i.title.toLowerCase().includes(q) ||
+                i.category?.toLowerCase().includes(q) ||
                 i.tags?.some(t => t.toLowerCase().includes(q))
             );
         }
@@ -97,7 +98,8 @@ export default function DashboardPage() {
             title: selectedItem.title,
             description: selectedItem.description,
             tags: selectedItem.tags || [],
-            assets: selectedItem.assets || []
+            assets: selectedItem.assets || [],
+            category: selectedItem.category || CATEGORIES[0]
         });
         setIsEditing(true);
         setActiveAssetIndex(0); // Reset preview to first item
@@ -352,8 +354,11 @@ export default function DashboardPage() {
                                             <h3 className="font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">{item.title}</h3>
                                             <p className="text-sm text-slate-500 truncate">{item.description}</p>
                                         </div>
-                                        <div className="hidden md:flex gap-2">
-                                            {item.tags?.slice(0, 3).map(tag => (
+                                        <div className="hidden md:flex gap-2 items-center">
+                                            <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-md border border-indigo-100">
+                                                {item.category}
+                                            </span>
+                                            {item.tags?.slice(0, 2).map(tag => (
                                                 <span key={tag} className="px-2 py-1 bg-slate-50 text-slate-600 text-xs font-medium rounded-md border border-slate-100">
                                                     #{tag}
                                                 </span>
@@ -409,7 +414,10 @@ export default function DashboardPage() {
                                                 <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">{item.description}</p>
                                             </div>
                                             <div className="flex flex-wrap gap-1.5 mt-auto pt-2">
-                                                {item.tags?.slice(0, 3).map(tag => (
+                                                <span className="px-2.5 py-1 bg-indigo-100 text-indigo-700 text-[10px] font-bold uppercase tracking-wider rounded-md">
+                                                    {item.category}
+                                                </span>
+                                                {item.tags?.slice(0, 2).map(tag => (
                                                     <span key={tag} className="px-2.5 py-1 bg-slate-50 text-indigo-900/70 text-[10px] font-bold uppercase tracking-wider rounded-md">
                                                         {tag}
                                                     </span>
@@ -565,6 +573,26 @@ export default function DashboardPage() {
                                 {isEditing && editForm ? (
                                     <div className="space-y-6">
                                         <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Category</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {CATEGORIES.map(cat => (
+                                                    <button
+                                                        key={cat}
+                                                        type="button"
+                                                        onClick={() => setEditForm({ ...editForm, category: cat })}
+                                                        className={`h-9 rounded-lg text-sm font-bold transition-all ${
+                                                            editForm.category === cat
+                                                                ? 'bg-indigo-600 text-white shadow-sm'
+                                                                : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300'
+                                                        }`}
+                                                    >
+                                                        {cat}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div>
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Title</label>
                                             <input
                                                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
@@ -616,7 +644,14 @@ export default function DashboardPage() {
 
                                         <div className="space-y-6">
                                             <div>
-                                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Tags & Classifiers</h3>
+                                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Category</h3>
+                                                <span className="px-3 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-bold rounded-full border border-indigo-200">
+                                                    {selectedItem.category}
+                                                </span>
+                                            </div>
+
+                                            <div>
+                                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Custom Tags</h3>
                                                 <div className="flex flex-wrap gap-2">
                                                     {selectedItem.tags?.map(tag => (
                                                         <span key={tag} className="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full border border-indigo-100">

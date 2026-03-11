@@ -13,7 +13,7 @@ import {
     Globe,
     ExternalLink
 } from 'lucide-react';
-import { saveInspiration, MediaAsset } from '@/lib/storage';
+import { saveInspiration, MediaAsset, CATEGORIES, Category } from '@/lib/storage';
 import { getCurrentUser } from '@/lib/auth';
 
 export default function CapturePage() {
@@ -29,6 +29,7 @@ export default function CapturePage() {
     const [description, setDescription] = useState('');
     const [assets, setAssets] = useState<MediaAsset[]>([]);
     const [title, setTitle] = useState('');
+    const [category, setCategory] = useState<Category>(CATEGORIES[0]);
     const [tags, setTags] = useState<string[]>([]);
 
     // UI State
@@ -42,6 +43,7 @@ export default function CapturePage() {
         try {
             await new Promise(r => setTimeout(r, 600)); // Smooth feeling
             await saveInspiration({
+                category,
                 title,
                 description,
                 assets,
@@ -250,7 +252,27 @@ export default function CapturePage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">02 / Title</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">02 / Category</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {CATEGORIES.map(cat => (
+                                    <button
+                                        key={cat}
+                                        type="button"
+                                        onClick={() => setCategory(cat)}
+                                        className={`h-10 rounded-xl text-sm font-bold transition-all ${
+                                            category === cat
+                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                                                : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'
+                                        }`}
+                                    >
+                                        {cat}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">03 / Title</label>
                             <input
                                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                                 placeholder="Give it a name..."
@@ -260,7 +282,7 @@ export default function CapturePage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">03 / Tags</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">04 / Custom Tags</label>
                             <div className="flex flex-wrap gap-2">
                                 {tags.map(tag => (
                                     <div key={tag} className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full text-xs font-bold animate-in zoom-in duration-300">

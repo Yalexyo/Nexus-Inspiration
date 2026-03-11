@@ -9,9 +9,13 @@ export interface MediaAsset {
     preview?: string; // For UI display (blob URL)
 }
 
+export const CATEGORIES = ['Policy', 'Economy', 'Sustainability', 'Technology'] as const;
+export type Category = typeof CATEGORIES[number];
+
 export interface Inspiration {
     id: string;
     user_id: string;
+    category: Category;
     title: string;
     description: string;
     assets: MediaAsset[];
@@ -110,6 +114,7 @@ export async function getInspirations(): Promise<Inspiration[]> {
     return data.map((item: any) => ({
         id: item.id,
         user_id: item.user_id,
+        category: item.category || 'Policy',
         title: item.title,
         description: item.description,
         assets: item.assets,
@@ -138,6 +143,7 @@ export async function saveInspiration(item: Omit<Inspiration, 'id' | 'createdAt'
             .from('inspirations')
             .insert([{
                 user_id: user.id, // Set Owner
+                category: item.category,
                 title: item.title,
                 description: item.description,
                 assets: processedAssets,
@@ -153,7 +159,7 @@ export async function saveInspiration(item: Omit<Inspiration, 'id' | 'createdAt'
     }
 }
 
-export async function updateInspiration(id: string, updates: Partial<Pick<Inspiration, 'title' | 'description' | 'tags' | 'assets'>>) {
+export async function updateInspiration(id: string, updates: Partial<Pick<Inspiration, 'title' | 'description' | 'tags' | 'assets' | 'category'>>) {
     ensureSupabaseConfigured();
 
     const user = getCurrentUser();
