@@ -39,6 +39,7 @@ export default function DashboardPage() {
     const [activeAssetIndex, setActiveAssetIndex] = useState(0);
     const [currentUserId, setCurrentUserId] = useState<string>('');
     const [editTagInput, setEditTagInput] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState<Category | 'All'>('All');
 
     const getOwnerName = (userId: string) => {
         const users = getUsers();
@@ -68,6 +69,9 @@ export default function DashboardPage() {
     // Filter Logic
     useEffect(() => {
         let result = inspirations;
+        if (categoryFilter !== 'All') {
+            result = result.filter(i => i.category === categoryFilter);
+        }
         if (search) {
             const q = search.toLowerCase();
             result = result.filter(i =>
@@ -77,7 +81,7 @@ export default function DashboardPage() {
             );
         }
         setFiltered(result);
-    }, [search, inspirations]);
+    }, [search, inspirations, categoryFilter]);
 
     const handleDelete = async (id: string) => {
         if (confirm('Are you sure you want to delete this inspiration? This will permanently delete the content from the database and storage.')) {
@@ -253,7 +257,7 @@ export default function DashboardPage() {
                             <LogOut size={20} />
                         </button>
                         <div className="w-9 h-9 bg-indigo-600 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-white text-xs font-bold">
-                            {getCurrentUser()?.name?.charAt(0) || 'U'}
+                            {currentUserId ? getOwnerName(currentUserId).charAt(0) : ''}
                         </div>
                     </div>
                 </div>
@@ -297,6 +301,23 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="flex items-center gap-3 w-full md:w-auto">
+                        {/* Category Filter */}
+                        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto">
+                            {(['All', ...CATEGORIES] as const).map((cat) => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setCategoryFilter(cat)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                                        categoryFilter === cat
+                                            ? 'bg-indigo-600 text-white shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+
                         {/* View Toggle (Desktop) */}
                         <div className="hidden md:flex bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
                             <button

@@ -66,15 +66,15 @@ export default function LoginPage() {
     <div className="min-h-screen w-full bg-[#FAFAFA] flex items-center justify-center p-4 relative overflow-hidden">
       {/* Ambient Background Mesh */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] bg-purple-200/30 rounded-full blur-[120px]" />
+        <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] bg-indigo-200/30 rounded-full blur-[120px]" />
         <div className="absolute top-[40%] -right-[10%] w-[60vw] h-[60vw] bg-indigo-200/30 rounded-full blur-[100px]" />
       </div>
 
-      <div className="w-full max-w-md bg-white/80 backdrop-blur-xl rounded-[32px] shadow-2xl shadow-indigo-500/10 border border-white/50 relative overflow-hidden transition-all hover:shadow-indigo-500/20 duration-500">
+      <div className="w-full max-w-md bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl shadow-indigo-500/10 border border-white/50 relative overflow-hidden transition-all hover:shadow-indigo-500/20 duration-500">
 
         {/* Header Section */}
         <div className="pt-8 pb-4 px-8 text-center flex flex-col items-center">
-          <div className="w-14 h-14 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-4 rotate-3 hover:rotate-6 transition-transform duration-300">
+          <div className="w-14 h-14 bg-gradient-to-tr from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-4 rotate-3 hover:rotate-6 transition-transform duration-300">
             <span className="text-white text-2xl font-black">N</span>
           </div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Nexus</h1>
@@ -152,7 +152,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading || !selectedUser}
-              className="w-full h-12 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed group text-sm"
+              className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed group text-sm"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">Entering...</span>

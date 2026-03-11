@@ -1,0 +1,57 @@
+import { NextRequest, NextResponse } from 'next/server';
+import pool, { initDatabase } from '@/lib/db';
+
+let dbInitialized = false;
+
+async function ensureDb() {
+    if (!dbInitialized) {
+        await initDatabase();
+        dbInitialized = true;
+    }
+}
+
+// GET all inspirations
+export async function GET() {
+    try {
+        await ensureDb();
+        const { rows } = await pool.query(
+            'SELECT * FROM inspirations ORDER BY created_at DESC'
+        );
+        return NextResponse.json(rows);
+    } catch (error) {
+        console.error('GET /api/inspirations error:', error);
+        return NextResponse.json({ error: 'Failed to fetch inspirations' }, { status: 500 });
+    }
+}
+
+// POST new inspiration
+export async function POST(req: NextRequest) {
+    try {
+        await ensureDb();
+        const body = await req.json();
+        const { user_id, category, title, description, assets, tags } = body;
+
+        if (!user_id || !title) {
+            return NextResponse.json({ error: 'user_id and title are required' }, { status: 400 });
+        }
+
+        const { rows } = await pool.query(
+            `INSERT INTO inspirations (user_id, category, title, description, assets, tags)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [
+                user_id,
+                category || 'Policy',
+                title,
+                description || '',
+                JSON.stringify(assets || []),
+                JSON.stringify(tags || []),
+            ]
+        );
+
+        return NextResponse.json(rows[0], { status: 201 });
+    } catch (error) {
+        console.error('POST /api/inspirations error:', error);
+        return NextResponse.json({ error: 'Failed to save inspiration' }, { status: 500 });
+    }
+}
