@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, USERS } from '@/lib/auth';
+import { getCurrentUser, getUsers } from '@/lib/auth';
 import { Button } from "@/components/ui/button";
 import {
     Plus,
@@ -40,7 +40,8 @@ export default function DashboardPage() {
     const [currentUserId, setCurrentUserId] = useState<string>('');
 
     const getOwnerName = (userId: string) => {
-        const user = USERS.find(u => u.id === userId);
+        const users = getUsers();
+        const user = users.find(u => u.id === userId);
         return user ? user.name : userId;
     };
 
@@ -247,8 +248,8 @@ export default function DashboardPage() {
                         >
                             <LogOut size={20} />
                         </button>
-                        <div className="w-9 h-9 bg-indigo-100 rounded-full border-2 border-white shadow-sm overflow-hidden">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Avatar" />
+                        <div className="w-9 h-9 bg-indigo-600 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-white text-xs font-bold">
+                            {getCurrentUser()?.name?.charAt(0) || 'U'}
                         </div>
                     </div>
                 </div>

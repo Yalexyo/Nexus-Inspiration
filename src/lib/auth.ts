@@ -2,23 +2,55 @@ export interface User {
     id: string;
     username: string;
     name: string;
-    avatar: string;
 }
 
-// Hardcoded Users
-export const USERS: User[] = [
-    { id: 'user_01', username: 'alex', name: 'Alex Creator', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex' },
-    { id: 'user_02', username: 'sarah', name: 'Sarah Designer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
-    { id: 'user_03', username: 'mike', name: 'Mike Engineer', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mike' },
-    { id: 'user_04', username: 'emily', name: 'Emily Product', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emily' },
-    { id: 'user_05', username: 'david', name: 'David Manager', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David' },
-    { id: 'god', username: 'god', name: 'God Mode', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=God' },
+const DEFAULT_PASSWORD = 'ssh12345';
+
+// Default users
+const DEFAULT_USERS: User[] = [
+    { id: 'user_01', username: 'Sun', name: 'Sun' },
+    { id: 'user_02', username: 'Jiang', name: 'Jiang' },
+    { id: 'user_03', username: 'Zhang', name: 'Zhang' },
+    { id: 'user_04', username: 'Xu', name: 'Xu' },
+    { id: 'user_05', username: 'Lii', name: 'Lii' },
 ];
 
 const AUTH_KEY = 'nexus_auth_user';
+const USERS_KEY = 'nexus_users';
 
-export function login(username: string): User | null {
-    const user = USERS.find(u => u.username === username.toLowerCase());
+// Get all users (default + custom added)
+export function getUsers(): User[] {
+    if (typeof window === 'undefined') return DEFAULT_USERS;
+    const stored = localStorage.getItem(USERS_KEY);
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch {
+            return DEFAULT_USERS;
+        }
+    }
+    return DEFAULT_USERS;
+}
+
+// For backward compatibility (used in dashboard)
+export const USERS = typeof window !== 'undefined' ? getUsers() : DEFAULT_USERS;
+
+// Add a new user
+export function addUser(username: string): User {
+    const users = getUsers();
+    const id = `user_${String(users.length + 1).padStart(2, '0')}`;
+    const newUser: User = { id, username, name: username };
+    const updated = [...users, newUser];
+    if (typeof window !== 'undefined') {
+        localStorage.setItem(USERS_KEY, JSON.stringify(updated));
+    }
+    return newUser;
+}
+
+export function login(username: string, password: string): User | null {
+    if (password !== DEFAULT_PASSWORD) return null;
+    const users = getUsers();
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
     if (user) {
         if (typeof window !== 'undefined') {
             localStorage.setItem(AUTH_KEY, JSON.stringify(user));
