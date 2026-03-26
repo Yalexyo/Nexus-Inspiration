@@ -295,10 +295,10 @@ export default function DashboardPage() {
             <main className="w-full max-w-7xl mx-auto px-4 md:px-6 py-6 flex-1 flex flex-col">
 
                 {/* Visual Toolbar */}
-                <div className="flex flex-col gap-4 mb-8">
-                    {/* Row 1: Search + Category + Actions */}
-                    <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                        <div className="relative w-full md:w-96 group">
+                <div className="flex flex-col gap-3 mb-8">
+                    {/* Row 1: Search + Actions */}
+                    <div className="flex flex-row items-center gap-3 w-full">
+                        <div className="flex-1 relative group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                             <input
                                 className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm placeholder:text-slate-400"
@@ -307,25 +307,7 @@ export default function DashboardPage() {
                                 onChange={(e) => setSearch(e.target.value)}
                             />
                         </div>
-
-                        <div className="flex items-center gap-3 w-full md:w-auto">
-                            {/* Category Filter */}
-                            <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto">
-                                {(['All', ...CATEGORIES] as const).map((cat) => (
-                                    <button
-                                        key={cat}
-                                        onClick={() => setCategoryFilter(cat)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-                                            categoryFilter === cat
-                                                ? 'bg-indigo-600 text-white shadow-sm'
-                                                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        {cat}
-                                    </button>
-                                ))}
-                            </div>
-
+                        <div className="flex items-center gap-2 ml-2">
                             {/* View Toggle (Desktop) */}
                             <div className="hidden md:flex bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
                                 <button
@@ -341,7 +323,6 @@ export default function DashboardPage() {
                                     <LayoutGrid size={18} />
                                 </button>
                             </div>
-
                             {/* Add New Button */}
                             <Link href="/capture" className="flex-1 md:flex-none">
                                 <button className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
@@ -352,7 +333,24 @@ export default function DashboardPage() {
                         </div>
                     </div>
 
-                    {/* Row 2: Subcategory Filter */}
+                    {/* Row 2: Category Filter */}
+                    <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
+                        {(['All', ...CATEGORIES] as const).map((cat) => (
+                            <button
+                                key={cat}
+                                onClick={() => setCategoryFilter(cat)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                                    categoryFilter === cat
+                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                }`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Row 3: Subcategory Filter */}
                     <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
                         {(['All', ...SUBCATEGORIES] as const).map((sub) => (
                             <button
