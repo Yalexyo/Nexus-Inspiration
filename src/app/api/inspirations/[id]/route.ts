@@ -9,7 +9,7 @@ export async function PUT(
     try {
         const { id } = await params;
         const body = await req.json();
-        const { user_id, title, description, tags, assets, category } = body;
+        const { user_id, title, description, tags, assets, category, subcategory } = body;
 
         if (!user_id) {
             return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
@@ -23,6 +23,7 @@ export async function PUT(
         if (title !== undefined) { fields.push(`title = $${idx++}`); values.push(title); }
         if (description !== undefined) { fields.push(`description = $${idx++}`); values.push(description); }
         if (category !== undefined) { fields.push(`category = $${idx++}`); values.push(category); }
+        if (subcategory !== undefined) { fields.push(`subcategory = $${idx++}`); values.push(subcategory); }
         if (tags !== undefined) { fields.push(`tags = $${idx++}`); values.push(JSON.stringify(tags)); }
         if (assets !== undefined) { fields.push(`assets = $${idx++}`); values.push(JSON.stringify(assets)); }
 

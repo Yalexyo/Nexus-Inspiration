@@ -25,7 +25,7 @@ import {
     Globe,
     Link as LinkIcon
 } from 'lucide-react';
-import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset, CATEGORIES, Category } from '@/lib/storage';
+import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory } from '@/lib/storage';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -35,11 +35,12 @@ export default function DashboardPage() {
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
     const [selectedItem, setSelectedItem] = useState<Inspiration | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState<{ title: string; description: string; tags: string[]; assets: MediaAsset[]; category: Category } | null>(null);
+    const [editForm, setEditForm] = useState<{ title: string; description: string; tags: string[]; assets: MediaAsset[]; category: Category; subcategory: Subcategory } | null>(null);
     const [activeAssetIndex, setActiveAssetIndex] = useState(0);
     const [currentUserId, setCurrentUserId] = useState<string>('');
     const [editTagInput, setEditTagInput] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<Category | 'All'>('All');
+    const [subcategoryFilter, setSubcategoryFilter] = useState<Subcategory | 'All'>('All');
 
     const getOwnerName = (userId: string) => {
         const users = getUsers();
@@ -72,16 +73,20 @@ export default function DashboardPage() {
         if (categoryFilter !== 'All') {
             result = result.filter(i => i.category === categoryFilter);
         }
+        if (subcategoryFilter !== 'All') {
+            result = result.filter(i => i.subcategory === subcategoryFilter);
+        }
         if (search) {
             const q = search.toLowerCase();
             result = result.filter(i =>
                 i.title.toLowerCase().includes(q) ||
                 i.category?.toLowerCase().includes(q) ||
+                i.subcategory?.toLowerCase().includes(q) ||
                 i.tags?.some(t => t.toLowerCase().includes(q))
             );
         }
         setFiltered(result);
-    }, [search, inspirations, categoryFilter]);
+    }, [search, inspirations, categoryFilter, subcategoryFilter]);
 
     const handleDelete = async (id: string) => {
         if (confirm('Are you sure you want to delete this inspiration? This will permanently delete the content from the database and storage.')) {
@@ -104,7 +109,8 @@ export default function DashboardPage() {
             description: selectedItem.description,
             tags: selectedItem.tags || [],
             assets: selectedItem.assets || [],
-            category: selectedItem.category || CATEGORIES[0]
+            category: selectedItem.category || CATEGORIES[0],
+            subcategory: selectedItem.subcategory || SUBCATEGORIES[0]
         });
         setIsEditing(true);
         setEditTagInput('');
@@ -300,47 +306,66 @@ export default function DashboardPage() {
                         />
                     </div>
 
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        {/* Category Filter */}
-                        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto">
-                            {(['All', ...CATEGORIES] as const).map((cat) => (
+                    <div className="flex flex-col gap-2 w-full md:w-auto">
+                        <div className="flex items-center gap-3 w-full md:w-auto">
+                            {/* Category Filter */}
+                            <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto">
+                                {(['All', ...CATEGORIES] as const).map((cat) => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => setCategoryFilter(cat)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                                            categoryFilter === cat
+                                                ? 'bg-indigo-600 text-white shadow-sm'
+                                                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        {cat}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* View Toggle (Desktop) */}
+                            <div className="hidden md:flex bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
                                 <button
-                                    key={cat}
-                                    onClick={() => setCategoryFilter(cat)}
+                                    onClick={() => setViewMode('list')}
+                                    className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    <ListIcon size={18} />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('grid')}
+                                    className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    <LayoutGrid size={18} />
+                                </button>
+                            </div>
+
+                            {/* Add New Button - Primary Action */}
+                            <Link href="/capture" className="flex-1 md:flex-none">
+                                <button className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+                                    <Plus size={18} strokeWidth={2.5} />
+                                    <span>Add New</span>
+                                </button>
+                            </Link>
+                        </div>
+
+                        {/* Subcategory Filter */}
+                        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto">
+                            {(['All', ...SUBCATEGORIES] as const).map((sub) => (
+                                <button
+                                    key={sub}
+                                    onClick={() => setSubcategoryFilter(sub)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-                                        categoryFilter === cat
+                                        subcategoryFilter === sub
                                             ? 'bg-indigo-600 text-white shadow-sm'
                                             : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                                     }`}
                                 >
-                                    {cat}
+                                    {sub}
                                 </button>
                             ))}
                         </div>
-
-                        {/* View Toggle (Desktop) */}
-                        <div className="hidden md:flex bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
-                            <button
-                                onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                            >
-                                <ListIcon size={18} />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                            >
-                                <LayoutGrid size={18} />
-                            </button>
-                        </div>
-
-                        {/* Add New Button - Primary Action */}
-                        <Link href="/capture" className="flex-1 md:flex-none">
-                            <button className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                                <Plus size={18} strokeWidth={2.5} />
-                                <span>Add New</span>
-                            </button>
-                        </Link>
                     </div>
                 </div>
 
@@ -381,6 +406,11 @@ export default function DashboardPage() {
                                             <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-md border border-indigo-100">
                                                 {item.category}
                                             </span>
+                                            {item.subcategory && (
+                                                <span className="px-2 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-md border border-amber-100">
+                                                    {item.subcategory}
+                                                </span>
+                                            )}
                                             {item.tags?.slice(0, 2).map(tag => (
                                                 <span key={tag} className="px-2 py-1 bg-slate-50 text-slate-600 text-xs font-medium rounded-md border border-slate-100">
                                                     #{tag}
@@ -440,6 +470,11 @@ export default function DashboardPage() {
                                                 <span className="px-2.5 py-1 bg-indigo-100 text-indigo-700 text-[10px] font-bold uppercase tracking-wider rounded-md">
                                                     {item.category}
                                                 </span>
+                                                {item.subcategory && (
+                                                    <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wider rounded-md">
+                                                        {item.subcategory}
+                                                    </span>
+                                                )}
                                                 {item.tags?.slice(0, 2).map(tag => (
                                                     <span key={tag} className="px-2.5 py-1 bg-slate-50 text-indigo-900/70 text-[10px] font-bold uppercase tracking-wider rounded-md">
                                                         {tag}
@@ -616,6 +651,26 @@ export default function DashboardPage() {
                                         </div>
 
                                         <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Type</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {SUBCATEGORIES.map(sub => (
+                                                    <button
+                                                        key={sub}
+                                                        type="button"
+                                                        onClick={() => setEditForm({ ...editForm, subcategory: sub })}
+                                                        className={`px-3 h-9 rounded-lg text-sm font-bold transition-all ${
+                                                            editForm.subcategory === sub
+                                                                ? 'bg-indigo-600 text-white shadow-sm'
+                                                                : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300'
+                                                        }`}
+                                                    >
+                                                        {sub}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div>
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Title</label>
                                             <input
                                                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
@@ -689,9 +744,16 @@ export default function DashboardPage() {
                                         <div className="space-y-6">
                                             <div>
                                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Category</h3>
-                                                <span className="px-3 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-bold rounded-full border border-indigo-200">
-                                                    {selectedItem.category}
-                                                </span>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <span className="px-3 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-bold rounded-full border border-indigo-200">
+                                                        {selectedItem.category}
+                                                    </span>
+                                                    {selectedItem.subcategory && (
+                                                        <span className="px-3 py-1.5 bg-amber-100 text-amber-700 text-sm font-bold rounded-full border border-amber-200">
+                                                            {selectedItem.subcategory}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div>

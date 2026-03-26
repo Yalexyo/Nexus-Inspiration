@@ -13,7 +13,7 @@ import {
     Globe,
     ExternalLink
 } from 'lucide-react';
-import { saveInspiration, MediaAsset, CATEGORIES, Category } from '@/lib/storage';
+import { saveInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory } from '@/lib/storage';
 import { getCurrentUser } from '@/lib/auth';
 
 export default function CapturePage() {
@@ -30,6 +30,7 @@ export default function CapturePage() {
     const [assets, setAssets] = useState<MediaAsset[]>([]);
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState<Category>(CATEGORIES[0]);
+    const [subcategory, setSubcategory] = useState<Subcategory>(SUBCATEGORIES[0]);
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
 
@@ -45,6 +46,7 @@ export default function CapturePage() {
             await new Promise(r => setTimeout(r, 600)); // Smooth feeling
             await saveInspiration({
                 category,
+                subcategory,
                 title,
                 description,
                 assets,
@@ -257,6 +259,26 @@ export default function CapturePage() {
                                         }`}
                                     >
                                         {cat}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">01.1 / Type</label>
+                            <div className="flex flex-wrap gap-2">
+                                {SUBCATEGORIES.map(sub => (
+                                    <button
+                                        key={sub}
+                                        type="button"
+                                        onClick={() => setSubcategory(sub)}
+                                        className={`h-9 px-4 rounded-lg text-sm font-bold transition-all ${
+                                            subcategory === sub
+                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                                                : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'
+                                        }`}
+                                    >
+                                        {sub}
                                     </button>
                                 ))}
                             </div>

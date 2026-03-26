@@ -29,19 +29,20 @@ export async function POST(req: NextRequest) {
     try {
         await ensureDb();
         const body = await req.json();
-        const { user_id, category, title, description, assets, tags } = body;
+        const { user_id, category, subcategory, title, description, assets, tags } = body;
 
         if (!user_id || !title) {
             return NextResponse.json({ error: 'user_id and title are required' }, { status: 400 });
         }
 
         const { rows } = await pool.query(
-            `INSERT INTO inspirations (user_id, category, title, description, assets, tags)
-             VALUES ($1, $2, $3, $4, $5, $6)
+            `INSERT INTO inspirations (user_id, category, subcategory, title, description, assets, tags)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING *`,
             [
                 user_id,
                 category || 'Policy',
+                subcategory || '产品',
                 title,
                 description || '',
                 JSON.stringify(assets || []),

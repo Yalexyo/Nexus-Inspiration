@@ -21,12 +21,17 @@ export async function initDatabase() {
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id TEXT NOT NULL,
                 category TEXT NOT NULL DEFAULT 'Policy',
+                subcategory TEXT NOT NULL DEFAULT '产品',
                 title TEXT NOT NULL,
                 description TEXT NOT NULL DEFAULT '',
                 assets JSONB NOT NULL DEFAULT '[]'::jsonb,
                 tags JSONB NOT NULL DEFAULT '[]'::jsonb,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
+        `);
+        // Add subcategory column if table already exists without it
+        await client.query(`
+            ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS subcategory TEXT NOT NULL DEFAULT '产品';
         `);
         console.log('Database initialized: inspirations table ready');
     } finally {

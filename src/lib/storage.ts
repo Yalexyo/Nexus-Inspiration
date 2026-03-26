@@ -11,10 +11,14 @@ export interface MediaAsset {
 export const CATEGORIES = ['Policy', 'Economy', 'Sustainability', 'Technology'] as const;
 export type Category = typeof CATEGORIES[number];
 
+export const SUBCATEGORIES = ['产品', '软件UI', '平面', '品牌', '视频'] as const;
+export type Subcategory = typeof SUBCATEGORIES[number];
+
 export interface Inspiration {
     id: string;
     user_id: string;
     category: Category;
+    subcategory: Subcategory;
     title: string;
     description: string;
     assets: MediaAsset[];
@@ -61,6 +65,7 @@ export async function getInspirations(): Promise<Inspiration[]> {
             id: item.id,
             user_id: item.user_id,
             category: item.category || 'Policy',
+            subcategory: item.subcategory || '产品',
             title: item.title,
             description: item.description,
             assets: item.assets || [],
@@ -93,6 +98,7 @@ export async function saveInspiration(item: Omit<Inspiration, 'id' | 'createdAt'
             body: JSON.stringify({
                 user_id: user.id,
                 category: item.category,
+                subcategory: item.subcategory,
                 title: item.title,
                 description: item.description,
                 assets: processedAssets,
@@ -111,7 +117,7 @@ export async function saveInspiration(item: Omit<Inspiration, 'id' | 'createdAt'
     }
 }
 
-export async function updateInspiration(id: string, updates: Partial<Pick<Inspiration, 'title' | 'description' | 'tags' | 'assets' | 'category'>>) {
+export async function updateInspiration(id: string, updates: Partial<Pick<Inspiration, 'title' | 'description' | 'tags' | 'assets' | 'category' | 'subcategory'>>) {
     const user = getCurrentUser();
     if (!user) throw new Error("Unauthorized");
 
