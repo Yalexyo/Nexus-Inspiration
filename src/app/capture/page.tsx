@@ -223,10 +223,10 @@ export default function CapturePage() {
                     {/* Thumbnails / Controls Area */}
                     <div className="shrink-0 p-4 md:p-6 bg-slate-50/50">
                         <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                            <label className="shrink-0 w-20 h-20 bg-white border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-0.5 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group relative">
+                            <label className="shrink-0 w-20 h-20 bg-white border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-0.5 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group relative" title="支持图片、视频、PDF，单文件最大120MB">
                                 <Plus size={20} className="text-indigo-600 group-hover:text-indigo-700 transition-colors" />
                                 <span className="text-[10px] font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">Add Files</span>
-                                <span className="text-[8px] text-slate-400/70 absolute bottom-1">Max 120MB</span>
+                                <span className="text-[7px] text-slate-400/70 absolute bottom-0.5 leading-tight text-center">图片/视频/PDF</span>
                                 <input type="file" className="hidden" accept="image/*,video/*,.pdf" multiple onChange={handleFileUpload} />
                             </label>
 

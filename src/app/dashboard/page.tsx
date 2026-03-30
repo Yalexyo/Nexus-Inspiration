@@ -605,9 +605,10 @@ export default function DashboardPage() {
 
                                     {/* Editable Thumbnails */}
                                     <div className="p-4 flex gap-3 overflow-x-auto bg-white border-t border-slate-100 scrollbar-hide items-center">
-                                        <label className="shrink-0 w-24 h-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all text-slate-400 hover:text-indigo-500">
+                                        <label className="shrink-0 w-24 h-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all text-slate-400 hover:text-indigo-500" title="支持图片、视频、PDF，单文件最大120MB">
                                             <Plus size={20} />
                                             <span className="text-[10px] font-bold">Add File</span>
+                                            <span className="text-[7px] opacity-70 leading-tight">图片/视频/PDF</span>
                                             <input type="file" className="hidden" accept="image/*,video/*,.pdf" multiple onChange={handleAssetUpload} />
                                         </label>
 
