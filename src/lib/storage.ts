@@ -1,6 +1,6 @@
 import { getCurrentUser } from './auth';
 
-export type AssetType = 'image' | 'video' | 'website';
+export type AssetType = 'image' | 'video' | 'website' | 'pdf';
 
 export interface MediaAsset {
     type: AssetType;

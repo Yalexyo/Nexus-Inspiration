@@ -11,7 +11,8 @@ import {
     Loader2,
     Play,
     Globe,
-    ExternalLink
+    ExternalLink,
+    FileText
 } from 'lucide-react';
 import { saveInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption } from '@/lib/storage';
 import { getCurrentUser } from '@/lib/auth';
@@ -90,7 +91,7 @@ export default function CapturePage() {
                 continue;
             }
 
-            const type = file.type.startsWith('video/') ? 'video' : 'image';
+            const type = file.type === 'application/pdf' ? 'pdf' : file.type.startsWith('video/') ? 'video' : 'image';
             // Create Blob URL for instant preview (Zero-Copy)
             const preview = URL.createObjectURL(file);
 
@@ -162,6 +163,16 @@ export default function CapturePage() {
                                 <div className="flex-1 min-h-0 relative group rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-200">
                                     {assets[0].type === 'video' ? (
                                         <video src={assets[0].preview} className="w-full h-full object-contain" controls />
+                                    ) : assets[0].type === 'pdf' ? (
+                                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 gap-4">
+                                            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                                <FileText size={48} className="text-red-500" />
+                                            </div>
+                                            <div className="text-center max-w-md px-4">
+                                                <h3 className="font-bold text-slate-900 text-lg mb-1">PDF Document</h3>
+                                                <p className="text-sm text-slate-500">{assets[0].content instanceof File ? assets[0].content.name : 'PDF'}</p>
+                                            </div>
+                                        </div>
                                     ) : assets[0].type === 'website' ? (
                                         <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 gap-4">
                                             <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm">
@@ -216,7 +227,7 @@ export default function CapturePage() {
                                 <Plus size={20} className="text-indigo-600 group-hover:text-indigo-700 transition-colors" />
                                 <span className="text-[10px] font-bold text-slate-400 group-hover:text-indigo-500 transition-colors">Add Files</span>
                                 <span className="text-[8px] text-slate-400/70 absolute bottom-1">Max 120MB</span>
-                                <input type="file" className="hidden" accept="image/*,video/*" multiple onChange={handleFileUpload} />
+                                <input type="file" className="hidden" accept="image/*,video/*,.pdf" multiple onChange={handleFileUpload} />
                             </label>
 
                             <button
@@ -233,6 +244,11 @@ export default function CapturePage() {
                                     {ctx.type === 'video' ? (
                                         <div className="w-full h-full flex items-center justify-center bg-slate-900">
                                             <Play size={16} className="text-white fill-white" />
+                                        </div>
+                                    ) : ctx.type === 'pdf' ? (
+                                        <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-500 gap-1 p-2 text-center">
+                                            <FileText size={24} />
+                                            <span className="text-[8px] leading-tight font-medium">PDF</span>
                                         </div>
                                     ) : ctx.type === 'website' ? (
                                         <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-500 gap-1 p-2 text-center">

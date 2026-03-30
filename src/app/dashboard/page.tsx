@@ -23,7 +23,8 @@ import {
     LogOut,
     Check,
     Globe,
-    Link as LinkIcon
+    Link as LinkIcon,
+    FileText
 } from 'lucide-react';
 import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption } from '@/lib/storage';
 
@@ -153,7 +154,7 @@ export default function DashboardPage() {
                 alert(`File "${file.name}" is too large! Max size is 120MB.`);
                 continue;
             }
-            const type = file.type.startsWith('video/') ? 'video' : 'image';
+            const type = file.type === 'application/pdf' ? 'pdf' : file.type.startsWith('video/') ? 'video' : 'image';
             // Create preview URL
             const preview = URL.createObjectURL(file);
             newAssets.push({ type, content: file, preview });
@@ -180,6 +181,13 @@ export default function DashboardPage() {
             return (
                 <div className="w-full h-full flex items-center justify-center bg-slate-900">
                     <Play size={16} className="text-white fill-white" />
+                </div>
+            );
+        } else if (asset.type === 'pdf') {
+            return (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-500 gap-1 p-2 text-center">
+                    <FileText size={24} />
+                    <span className="text-[10px] leading-tight font-medium">PDF</span>
                 </div>
             );
         } else if (asset.type === 'website') {
@@ -210,6 +218,28 @@ export default function DashboardPage() {
                     className="max-h-full max-w-full"
                     controls
                 />
+            );
+        } else if (asset.type === 'pdf') {
+            const pdfUrl = asset.preview || (typeof asset.content === 'string' ? asset.content : '');
+            return (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 gap-4">
+                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm">
+                        <FileText size={48} className="text-red-500" />
+                    </div>
+                    <div className="text-center max-w-md px-4">
+                        <h3 className="font-bold text-slate-900 text-lg mb-1">PDF Document</h3>
+                    </div>
+                    {pdfUrl && (
+                        <a
+                            href={pdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 px-6 py-2 bg-red-500 text-white rounded-lg font-bold text-sm hover:bg-red-600 transition-colors flex items-center gap-2"
+                        >
+                            <ExternalLink size={16} /> Open PDF
+                        </a>
+                    )}
+                </div>
             );
         } else if (asset.type === 'website') {
             return (
@@ -455,6 +485,11 @@ export default function DashboardPage() {
                                                         <div className="w-full h-full flex items-center justify-center bg-slate-900 group-hover:scale-105 transition-transform duration-500">
                                                             <Play size={32} className="text-white fill-white opacity-80" />
                                                         </div>
+                                                    ) : item.assets[0].type === 'pdf' ? (
+                                                        <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-400 group-hover:bg-red-100 transition-colors">
+                                                            <FileText size={48} />
+                                                            <span className="text-xs font-bold mt-2 opacity-60">PDF</span>
+                                                        </div>
                                                     ) : item.assets[0].type === 'website' ? (
                                                         <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-400 group-hover:bg-indigo-100 transition-colors">
                                                             <Globe size={48} />
@@ -573,7 +608,7 @@ export default function DashboardPage() {
                                         <label className="shrink-0 w-24 h-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all text-slate-400 hover:text-indigo-500">
                                             <Plus size={20} />
                                             <span className="text-[10px] font-bold">Add File</span>
-                                            <input type="file" className="hidden" accept="image/*,video/*" multiple onChange={handleAssetUpload} />
+                                            <input type="file" className="hidden" accept="image/*,video/*,.pdf" multiple onChange={handleAssetUpload} />
                                         </label>
 
                                         <button
