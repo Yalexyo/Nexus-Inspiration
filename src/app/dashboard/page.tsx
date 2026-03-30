@@ -39,8 +39,8 @@ export default function DashboardPage() {
     const [activeAssetIndex, setActiveAssetIndex] = useState(0);
     const [currentUserId, setCurrentUserId] = useState<string>('');
     const [editTagInput, setEditTagInput] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState<Category | 'All'>('All');
-    const [subcategoryFilter, setSubcategoryFilter] = useState<Subcategory | 'All'>('All');
+    const [categoryFilter, setCategoryFilter] = useState<Category>(CATEGORIES[0]);
+    const [subcategoryFilter, setSubcategoryFilter] = useState<Subcategory>(SUBCATEGORIES[0]);
 
     const getOwnerName = (userId: string) => {
         const users = getUsers();
@@ -67,20 +67,18 @@ export default function DashboardPage() {
         load();
     }, [router]);
 
-    // Reset subcategory filter when category filter changes away from 设计灵感
+    // Reset subcategory filter when category filter changes
     useEffect(() => {
-        if (categoryFilter !== DESIGN_CATEGORY) {
-            setSubcategoryFilter('All');
+        if (categoryFilter === DESIGN_CATEGORY) {
+            setSubcategoryFilter(SUBCATEGORIES[0]);
         }
     }, [categoryFilter]);
 
     // Filter Logic
     useEffect(() => {
         let result = inspirations;
-        if (categoryFilter !== 'All') {
-            result = result.filter(i => i.category === categoryFilter);
-        }
-        if (subcategoryFilter !== 'All') {
+        result = result.filter(i => i.category === categoryFilter);
+        if (categoryFilter === DESIGN_CATEGORY) {
             result = result.filter(i => i.subcategory === subcategoryFilter);
         }
         if (search) {
@@ -345,7 +343,7 @@ export default function DashboardPage() {
 
                     {/* Row 2: Category Filter */}
                     <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
-                        {(['All', ...CATEGORIES] as const).map((cat) => (
+                        {CATEGORIES.map((cat) => (
                             <button
                                 key={cat}
                                 onClick={() => setCategoryFilter(cat)}
@@ -363,7 +361,7 @@ export default function DashboardPage() {
                     {/* Row 3: Subcategory Filter (only for 设计灵感) */}
                     {categoryFilter === DESIGN_CATEGORY && (
                         <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
-                            {(['All', ...SUBCATEGORIES] as const).map((sub) => (
+                            {SUBCATEGORIES.map((sub) => (
                                 <button
                                     key={sub}
                                     onClick={() => setSubcategoryFilter(sub)}
