@@ -24,6 +24,9 @@ export async function initDatabase() {
                 subcategory TEXT DEFAULT NULL,
                 title TEXT NOT NULL,
                 description TEXT NOT NULL DEFAULT '',
+                source TEXT DEFAULT NULL,
+                source_text TEXT NOT NULL DEFAULT '',
+                design_insight TEXT NOT NULL DEFAULT '',
                 assets JSONB NOT NULL DEFAULT '[]'::jsonb,
                 tags JSONB NOT NULL DEFAULT '[]'::jsonb,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -65,6 +68,11 @@ export async function initDatabase() {
         await client.query(`
             UPDATE inspirations SET subcategory = NULL WHERE category != '设计灵感';
         `);
+
+        // Add source, source_text, design_insight columns if missing
+        await client.query(`ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS source TEXT DEFAULT NULL;`);
+        await client.query(`ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS source_text TEXT NOT NULL DEFAULT '';`);
+        await client.query(`ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS design_insight TEXT NOT NULL DEFAULT '';`);
 
         console.log('Database initialized: inspirations table ready');
     } finally {

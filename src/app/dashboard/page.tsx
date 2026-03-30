@@ -25,7 +25,7 @@ import {
     Globe,
     Link as LinkIcon
 } from 'lucide-react';
-import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY } from '@/lib/storage';
+import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption } from '@/lib/storage';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -35,7 +35,7 @@ export default function DashboardPage() {
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
     const [selectedItem, setSelectedItem] = useState<Inspiration | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState<{ title: string; description: string; tags: string[]; assets: MediaAsset[]; category: Category; subcategory: Subcategory | null } | null>(null);
+    const [editForm, setEditForm] = useState<{ title: string; description: string; tags: string[]; assets: MediaAsset[]; category: Category; subcategory: Subcategory | null; source: SourceOption | null; source_text: string; design_insight: string } | null>(null);
     const [activeAssetIndex, setActiveAssetIndex] = useState(0);
     const [currentUserId, setCurrentUserId] = useState<string>('');
     const [editTagInput, setEditTagInput] = useState('');
@@ -117,7 +117,10 @@ export default function DashboardPage() {
             tags: selectedItem.tags || [],
             assets: selectedItem.assets || [],
             category: selectedItem.category || CATEGORIES[0],
-            subcategory: selectedItem.subcategory || null
+            subcategory: selectedItem.subcategory || null,
+            source: (selectedItem.source as SourceOption) || null,
+            source_text: selectedItem.source_text || '',
+            design_insight: selectedItem.design_insight || ''
         });
         setIsEditing(true);
         setEditTagInput('');
@@ -409,6 +412,11 @@ export default function DashboardPage() {
                                         <div className="flex-1 min-w-0">
                                             <h3 className="font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">{item.title}</h3>
                                             <p className="text-sm text-slate-500 truncate">{item.description}</p>
+                                            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
+                                                <span>{getOwnerName(item.user_id)}</span>
+                                                <span>·</span>
+                                                <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                                            </div>
                                         </div>
                                         <div className="hidden md:flex gap-2 items-center">
                                             <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-md border border-indigo-100">
@@ -473,6 +481,11 @@ export default function DashboardPage() {
                                             <div>
                                                 <h3 className="font-bold text-lg text-slate-900 leading-tight mb-1 group-hover:text-indigo-600 transition-colors">{item.title}</h3>
                                                 <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">{item.description}</p>
+                                                <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-400">
+                                                    <span>{getOwnerName(item.user_id)}</span>
+                                                    <span>·</span>
+                                                    <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                                                </div>
                                             </div>
                                             <div className="flex flex-wrap gap-1.5 mt-auto pt-2">
                                                 <span className="px-2.5 py-1 bg-indigo-100 text-indigo-700 text-[10px] font-bold uppercase tracking-wider rounded-md">
@@ -703,6 +716,44 @@ export default function DashboardPage() {
                                         </div>
 
                                         <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">信息来源</label>
+                                            <div className="flex flex-wrap gap-2 mb-2">
+                                                {SOURCE_OPTIONS.map(opt => (
+                                                    <button
+                                                        key={opt}
+                                                        type="button"
+                                                        onClick={() => setEditForm({ ...editForm, source: editForm.source === opt ? null : opt })}
+                                                        className={`px-3 h-9 rounded-lg text-sm font-bold transition-all ${
+                                                            editForm.source === opt
+                                                                ? 'bg-indigo-600 text-white shadow-sm'
+                                                                : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300'
+                                                        }`}
+                                                    >
+                                                        {opt}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <input
+                                                className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                                placeholder="补充说明（选填）..."
+                                                value={editForm.source_text}
+                                                onChange={(e) => setEditForm({ ...editForm, source_text: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">
+                                                设计启示 <span className="text-red-500">*</span>
+                                            </label>
+                                            <textarea
+                                                className="w-full min-h-[80px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
+                                                placeholder="这个灵感对设计有什么启发？..."
+                                                value={editForm.design_insight}
+                                                onChange={(e) => setEditForm({ ...editForm, design_insight: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div>
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Tags</label>
                                             <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl min-h-[60px]">
                                                 {editForm.tags.map(tag => (
@@ -769,6 +820,31 @@ export default function DashboardPage() {
                                                     )}
                                                 </div>
                                             </div>
+
+                                            {(selectedItem.source || selectedItem.source_text) && (
+                                                <div>
+                                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">信息来源</h3>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        {selectedItem.source && (
+                                                            <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-sm font-bold rounded-full border border-emerald-200">
+                                                                {selectedItem.source}
+                                                            </span>
+                                                        )}
+                                                        {selectedItem.source_text && (
+                                                            <span className="text-sm text-slate-600">{selectedItem.source_text}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedItem.design_insight && (
+                                                <div className="prose prose-slate">
+                                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">设计启示</h3>
+                                                    <p className="text-slate-600 leading-relaxed text-lg whitespace-pre-wrap">
+                                                        {selectedItem.design_insight}
+                                                    </p>
+                                                </div>
+                                            )}
 
                                             <div>
                                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Custom Tags</h3>

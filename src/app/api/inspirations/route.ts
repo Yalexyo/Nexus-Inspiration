@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     try {
         await ensureDb();
         const body = await req.json();
-        const { user_id, category, subcategory, title, description, assets, tags } = body;
+        const { user_id, category, subcategory, title, description, source, source_text, design_insight, assets, tags } = body;
 
         if (!user_id || !title) {
             return NextResponse.json({ error: 'user_id and title are required' }, { status: 400 });
@@ -40,8 +40,8 @@ export async function POST(req: NextRequest) {
         const finalSubcategory = finalCategory === '设计灵感' ? (subcategory || null) : null;
 
         const { rows } = await pool.query(
-            `INSERT INTO inspirations (user_id, category, subcategory, title, description, assets, tags)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `INSERT INTO inspirations (user_id, category, subcategory, title, description, source, source_text, design_insight, assets, tags)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              RETURNING *`,
             [
                 user_id,
@@ -49,6 +49,9 @@ export async function POST(req: NextRequest) {
                 finalSubcategory,
                 title,
                 description || '',
+                source || null,
+                source_text || '',
+                design_insight || '',
                 JSON.stringify(assets || []),
                 JSON.stringify(tags || []),
             ]

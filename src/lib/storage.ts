@@ -16,6 +16,9 @@ export type Subcategory = typeof SUBCATEGORIES[number];
 
 export const DESIGN_CATEGORY = '设计灵感' as const;
 
+export const SOURCE_OPTIONS = ['网络', '展会', '交流会', '客户现场', '其他'] as const;
+export type SourceOption = typeof SOURCE_OPTIONS[number];
+
 export interface Inspiration {
     id: string;
     user_id: string;
@@ -23,6 +26,9 @@ export interface Inspiration {
     subcategory: Subcategory | null;
     title: string;
     description: string;
+    source: SourceOption | null;
+    source_text: string;
+    design_insight: string;
     assets: MediaAsset[];
     tags: string[];
     createdAt: string;
@@ -70,6 +76,9 @@ export async function getInspirations(): Promise<Inspiration[]> {
             subcategory: item.subcategory || null,
             title: item.title,
             description: item.description,
+            source: item.source || null,
+            source_text: item.source_text || '',
+            design_insight: item.design_insight || '',
             assets: item.assets || [],
             tags: item.tags || [],
             createdAt: item.created_at
@@ -103,6 +112,9 @@ export async function saveInspiration(item: Omit<Inspiration, 'id' | 'createdAt'
                 subcategory: item.subcategory,
                 title: item.title,
                 description: item.description,
+                source: item.source,
+                source_text: item.source_text,
+                design_insight: item.design_insight,
                 assets: processedAssets,
                 tags: item.tags
             })
@@ -119,7 +131,7 @@ export async function saveInspiration(item: Omit<Inspiration, 'id' | 'createdAt'
     }
 }
 
-export async function updateInspiration(id: string, updates: Partial<Pick<Inspiration, 'title' | 'description' | 'tags' | 'assets' | 'category' | 'subcategory'>>) {
+export async function updateInspiration(id: string, updates: Partial<Pick<Inspiration, 'title' | 'description' | 'tags' | 'assets' | 'category' | 'subcategory' | 'source' | 'source_text' | 'design_insight'>>) {
     const user = getCurrentUser();
     if (!user) throw new Error("Unauthorized");
 

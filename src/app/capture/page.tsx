@@ -13,7 +13,7 @@ import {
     Globe,
     ExternalLink
 } from 'lucide-react';
-import { saveInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY } from '@/lib/storage';
+import { saveInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption } from '@/lib/storage';
 import { getCurrentUser } from '@/lib/auth';
 
 export default function CapturePage() {
@@ -31,6 +31,9 @@ export default function CapturePage() {
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState<Category>(CATEGORIES[0]);
     const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
+    const [source, setSource] = useState<SourceOption | null>(null);
+    const [sourceText, setSourceText] = useState('');
+    const [designInsight, setDesignInsight] = useState('');
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
 
@@ -58,6 +61,9 @@ export default function CapturePage() {
                 subcategory,
                 title,
                 description,
+                source,
+                source_text: sourceText,
+                design_insight: designInsight,
                 assets,
                 tags
             });
@@ -316,7 +322,45 @@ export default function CapturePage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">04 / Custom Tags</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">04 / 信息来源</label>
+                            <div className="flex flex-wrap gap-2">
+                                {SOURCE_OPTIONS.map(opt => (
+                                    <button
+                                        key={opt}
+                                        type="button"
+                                        onClick={() => setSource(source === opt ? null : opt)}
+                                        className={`h-9 px-4 rounded-lg text-sm font-bold transition-all ${
+                                            source === opt
+                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                                                : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'
+                                        }`}
+                                    >
+                                        {opt}
+                                    </button>
+                                ))}
+                            </div>
+                            <input
+                                className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                placeholder="补充说明（选填）..."
+                                value={sourceText}
+                                onChange={(e) => setSourceText(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">
+                                05 / 设计启示 <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                                className="w-full min-h-[80px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
+                                placeholder="这个灵感对设计有什么启发？..."
+                                value={designInsight}
+                                onChange={(e) => setDesignInsight(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">06 / Custom Tags</label>
                             <div className="flex flex-wrap gap-2 items-center">
                                 {tags.map(tag => (
                                     <div key={tag} className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full text-xs font-bold animate-in zoom-in duration-300">
@@ -369,7 +413,7 @@ export default function CapturePage() {
                     <div className="shrink-0 p-5 md:p-6 border-t border-slate-100 bg-white z-10">
                         <button
                             onClick={handleSave}
-                            disabled={!title.trim() || !description.trim() || isSaving || (category === DESIGN_CATEGORY && !subcategory)}
+                            disabled={!title.trim() || !description.trim() || !designInsight.trim() || isSaving || (category === DESIGN_CATEGORY && !subcategory)}
                             className="w-full bg-indigo-600 text-white h-12 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:translate-y-[-1px] active:translate-y-0 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
