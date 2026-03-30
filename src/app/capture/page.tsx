@@ -13,7 +13,7 @@ import {
     Globe,
     ExternalLink
 } from 'lucide-react';
-import { saveInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory } from '@/lib/storage';
+import { saveInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY } from '@/lib/storage';
 import { getCurrentUser } from '@/lib/auth';
 
 export default function CapturePage() {
@@ -30,9 +30,18 @@ export default function CapturePage() {
     const [assets, setAssets] = useState<MediaAsset[]>([]);
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState<Category>(CATEGORIES[0]);
-    const [subcategory, setSubcategory] = useState<Subcategory>(SUBCATEGORIES[0]);
+    const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
+
+    // When category changes, sync subcategory
+    useEffect(() => {
+        if (category === DESIGN_CATEGORY) {
+            setSubcategory(SUBCATEGORIES[0]);
+        } else {
+            setSubcategory(null);
+        }
+    }, [category]);
 
     // UI State
     const [isSaving, setIsSaving] = useState(false);
@@ -246,13 +255,13 @@ export default function CapturePage() {
                     <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6">
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">01 / Category</label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="flex flex-wrap gap-2">
                                 {CATEGORIES.map(cat => (
                                     <button
                                         key={cat}
                                         type="button"
                                         onClick={() => setCategory(cat)}
-                                        className={`h-10 rounded-xl text-sm font-bold transition-all ${
+                                        className={`h-10 px-4 rounded-xl text-sm font-bold transition-all ${
                                             category === cat
                                                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
                                                 : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'
@@ -264,25 +273,27 @@ export default function CapturePage() {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">01.1 / Type</label>
-                            <div className="flex flex-wrap gap-2">
-                                {SUBCATEGORIES.map(sub => (
-                                    <button
-                                        key={sub}
-                                        type="button"
-                                        onClick={() => setSubcategory(sub)}
-                                        className={`h-9 px-4 rounded-lg text-sm font-bold transition-all ${
-                                            subcategory === sub
-                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
-                                                : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'
-                                        }`}
-                                    >
-                                        {sub}
-                                    </button>
-                                ))}
+                        {category === DESIGN_CATEGORY && (
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">01.1 / Type</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {SUBCATEGORIES.map(sub => (
+                                        <button
+                                            key={sub}
+                                            type="button"
+                                            onClick={() => setSubcategory(sub)}
+                                            className={`h-9 px-4 rounded-lg text-sm font-bold transition-all ${
+                                                subcategory === sub
+                                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                                                    : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'
+                                            }`}
+                                        >
+                                            {sub}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">02 / Title</label>
@@ -358,7 +369,7 @@ export default function CapturePage() {
                     <div className="shrink-0 p-5 md:p-6 border-t border-slate-100 bg-white z-10">
                         <button
                             onClick={handleSave}
-                            disabled={!title.trim() || !description.trim() || isSaving}
+                            disabled={!title.trim() || !description.trim() || isSaving || (category === DESIGN_CATEGORY && !subcategory)}
                             className="w-full bg-indigo-600 text-white h-12 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:translate-y-[-1px] active:translate-y-0 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}

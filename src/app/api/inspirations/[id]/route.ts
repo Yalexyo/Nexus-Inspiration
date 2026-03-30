@@ -15,6 +15,12 @@ export async function PUT(
             return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
         }
 
+        // When category is updated to non-设计灵感, force subcategory to null
+        let finalSubcategory = subcategory;
+        if (category !== undefined && category !== '设计灵感') {
+            finalSubcategory = null;
+        }
+
         // Build dynamic SET clause from provided fields
         const fields: string[] = [];
         const values: any[] = [];
@@ -23,7 +29,7 @@ export async function PUT(
         if (title !== undefined) { fields.push(`title = $${idx++}`); values.push(title); }
         if (description !== undefined) { fields.push(`description = $${idx++}`); values.push(description); }
         if (category !== undefined) { fields.push(`category = $${idx++}`); values.push(category); }
-        if (subcategory !== undefined) { fields.push(`subcategory = $${idx++}`); values.push(subcategory); }
+        if (category !== undefined || subcategory !== undefined) { fields.push(`subcategory = $${idx++}`); values.push(finalSubcategory); }
         if (tags !== undefined) { fields.push(`tags = $${idx++}`); values.push(JSON.stringify(tags)); }
         if (assets !== undefined) { fields.push(`assets = $${idx++}`); values.push(JSON.stringify(assets)); }
 

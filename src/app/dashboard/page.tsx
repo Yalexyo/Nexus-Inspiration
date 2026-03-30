@@ -25,7 +25,7 @@ import {
     Globe,
     Link as LinkIcon
 } from 'lucide-react';
-import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory } from '@/lib/storage';
+import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY } from '@/lib/storage';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -35,7 +35,7 @@ export default function DashboardPage() {
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
     const [selectedItem, setSelectedItem] = useState<Inspiration | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState<{ title: string; description: string; tags: string[]; assets: MediaAsset[]; category: Category; subcategory: Subcategory } | null>(null);
+    const [editForm, setEditForm] = useState<{ title: string; description: string; tags: string[]; assets: MediaAsset[]; category: Category; subcategory: Subcategory | null } | null>(null);
     const [activeAssetIndex, setActiveAssetIndex] = useState(0);
     const [currentUserId, setCurrentUserId] = useState<string>('');
     const [editTagInput, setEditTagInput] = useState('');
@@ -66,6 +66,13 @@ export default function DashboardPage() {
         };
         load();
     }, [router]);
+
+    // Reset subcategory filter when category filter changes away from 设计灵感
+    useEffect(() => {
+        if (categoryFilter !== DESIGN_CATEGORY) {
+            setSubcategoryFilter('All');
+        }
+    }, [categoryFilter]);
 
     // Filter Logic
     useEffect(() => {
@@ -110,7 +117,7 @@ export default function DashboardPage() {
             tags: selectedItem.tags || [],
             assets: selectedItem.assets || [],
             category: selectedItem.category || CATEGORIES[0],
-            subcategory: selectedItem.subcategory || SUBCATEGORIES[0]
+            subcategory: selectedItem.subcategory || null
         });
         setIsEditing(true);
         setEditTagInput('');
@@ -350,22 +357,24 @@ export default function DashboardPage() {
                         ))}
                     </div>
 
-                    {/* Row 3: Subcategory Filter */}
-                    <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
-                        {(['All', ...SUBCATEGORIES] as const).map((sub) => (
-                            <button
-                                key={sub}
-                                onClick={() => setSubcategoryFilter(sub)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-                                    subcategoryFilter === sub
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                                }`}
-                            >
-                                {sub}
-                            </button>
-                        ))}
-                    </div>
+                    {/* Row 3: Subcategory Filter (only for 设计灵感) */}
+                    {categoryFilter === DESIGN_CATEGORY && (
+                        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
+                            {(['All', ...SUBCATEGORIES] as const).map((sub) => (
+                                <button
+                                    key={sub}
+                                    onClick={() => setSubcategoryFilter(sub)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                                        subcategoryFilter === sub
+                                            ? 'bg-indigo-600 text-white shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    {sub}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Content Grid/List */}
@@ -631,13 +640,17 @@ export default function DashboardPage() {
                                     <div className="space-y-6">
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Category</label>
-                                            <div className="grid grid-cols-2 gap-2">
+                                            <div className="flex flex-wrap gap-2">
                                                 {CATEGORIES.map(cat => (
                                                     <button
                                                         key={cat}
                                                         type="button"
-                                                        onClick={() => setEditForm({ ...editForm, category: cat })}
-                                                        className={`h-9 rounded-lg text-sm font-bold transition-all ${
+                                                        onClick={() => setEditForm({
+                                                            ...editForm,
+                                                            category: cat,
+                                                            subcategory: cat === DESIGN_CATEGORY ? SUBCATEGORIES[0] : null
+                                                        })}
+                                                        className={`px-4 h-9 rounded-lg text-sm font-bold transition-all ${
                                                             editForm.category === cat
                                                                 ? 'bg-indigo-600 text-white shadow-sm'
                                                                 : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300'
@@ -649,25 +662,27 @@ export default function DashboardPage() {
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Type</label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {SUBCATEGORIES.map(sub => (
-                                                    <button
-                                                        key={sub}
-                                                        type="button"
-                                                        onClick={() => setEditForm({ ...editForm, subcategory: sub })}
-                                                        className={`px-3 h-9 rounded-lg text-sm font-bold transition-all ${
-                                                            editForm.subcategory === sub
-                                                                ? 'bg-indigo-600 text-white shadow-sm'
-                                                                : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300'
-                                                        }`}
-                                                    >
-                                                        {sub}
-                                                    </button>
-                                                ))}
+                                        {editForm.category === DESIGN_CATEGORY && (
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Type</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {SUBCATEGORIES.map(sub => (
+                                                        <button
+                                                            key={sub}
+                                                            type="button"
+                                                            onClick={() => setEditForm({ ...editForm, subcategory: sub })}
+                                                            className={`px-3 h-9 rounded-lg text-sm font-bold transition-all ${
+                                                                editForm.subcategory === sub
+                                                                    ? 'bg-indigo-600 text-white shadow-sm'
+                                                                    : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300'
+                                                            }`}
+                                                        >
+                                                            {sub}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
 
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Title</label>

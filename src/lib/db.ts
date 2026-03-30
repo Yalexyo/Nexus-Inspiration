@@ -20,8 +20,8 @@ export async function initDatabase() {
             CREATE TABLE IF NOT EXISTS inspirations (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 user_id TEXT NOT NULL,
-                category TEXT NOT NULL DEFAULT 'Policy',
-                subcategory TEXT NOT NULL DEFAULT '产品',
+                category TEXT NOT NULL DEFAULT '政策',
+                subcategory TEXT DEFAULT NULL,
                 title TEXT NOT NULL,
                 description TEXT NOT NULL DEFAULT '',
                 assets JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -31,8 +31,41 @@ export async function initDatabase() {
         `);
         // Add subcategory column if table already exists without it
         await client.query(`
-            ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS subcategory TEXT NOT NULL DEFAULT '产品';
+            ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS subcategory TEXT DEFAULT NULL;
         `);
+
+        // Migration: make subcategory nullable and update default
+        await client.query(`
+            ALTER TABLE inspirations ALTER COLUMN subcategory DROP NOT NULL;
+        `).catch(() => {}); // Ignore if already nullable
+        await client.query(`
+            ALTER TABLE inspirations ALTER COLUMN subcategory SET DEFAULT NULL;
+        `);
+
+        // Migration: English categories → Chinese
+        await client.query(`
+            UPDATE inspirations SET category = '政策' WHERE category = 'Policy';
+        `);
+        await client.query(`
+            UPDATE inspirations SET category = '经济' WHERE category = 'Economy';
+        `);
+        await client.query(`
+            UPDATE inspirations SET category = '社会' WHERE category = 'Sustainability';
+        `);
+        await client.query(`
+            UPDATE inspirations SET category = '技术' WHERE category = 'Technology';
+        `);
+
+        // Migration: 平面 → 其他
+        await client.query(`
+            UPDATE inspirations SET subcategory = '其他' WHERE subcategory = '平面';
+        `);
+
+        // Migration: non-设计灵感 rows should have subcategory = NULL
+        await client.query(`
+            UPDATE inspirations SET subcategory = NULL WHERE category != '设计灵感';
+        `);
+
         console.log('Database initialized: inspirations table ready');
     } finally {
         client.release();

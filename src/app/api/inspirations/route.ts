@@ -35,14 +35,18 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'user_id and title are required' }, { status: 400 });
         }
 
+        const finalCategory = category || '政策';
+        // Non-设计灵感 categories must have null subcategory
+        const finalSubcategory = finalCategory === '设计灵感' ? (subcategory || null) : null;
+
         const { rows } = await pool.query(
             `INSERT INTO inspirations (user_id, category, subcategory, title, description, assets, tags)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING *`,
             [
                 user_id,
-                category || 'Policy',
-                subcategory || '产品',
+                finalCategory,
+                finalSubcategory,
                 title,
                 description || '',
                 JSON.stringify(assets || []),

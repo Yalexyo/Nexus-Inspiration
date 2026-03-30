@@ -8,17 +8,19 @@ export interface MediaAsset {
     preview?: string; // For UI display (blob URL)
 }
 
-export const CATEGORIES = ['Policy', 'Economy', 'Sustainability', 'Technology'] as const;
+export const CATEGORIES = ['政策', '经济', '社会', '技术', '设计灵感'] as const;
 export type Category = typeof CATEGORIES[number];
 
-export const SUBCATEGORIES = ['产品', '软件UI', '平面', '品牌', '视频'] as const;
+export const SUBCATEGORIES = ['产品', '品牌', '软件UI', '视频', '其他'] as const;
 export type Subcategory = typeof SUBCATEGORIES[number];
+
+export const DESIGN_CATEGORY = '设计灵感' as const;
 
 export interface Inspiration {
     id: string;
     user_id: string;
     category: Category;
-    subcategory: Subcategory;
+    subcategory: Subcategory | null;
     title: string;
     description: string;
     assets: MediaAsset[];
@@ -64,8 +66,8 @@ export async function getInspirations(): Promise<Inspiration[]> {
         return data.map((item: any) => ({
             id: item.id,
             user_id: item.user_id,
-            category: item.category || 'Policy',
-            subcategory: item.subcategory || '产品',
+            category: item.category || '政策',
+            subcategory: item.subcategory || null,
             title: item.title,
             description: item.description,
             assets: item.assets || [],
