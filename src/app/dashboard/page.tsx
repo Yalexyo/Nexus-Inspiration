@@ -383,7 +383,7 @@ export default function DashboardPage() {
                                         : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                                 }`}
                             >
-                                {cat}
+                                {cat}({inspirations.filter(i => i.category === cat).length})
                             </button>
                         ))}
                     </div>
@@ -401,7 +401,7 @@ export default function DashboardPage() {
                                             : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                                     }`}
                                 >
-                                    {sub}
+                                    {sub}({inspirations.filter(i => i.category === DESIGN_CATEGORY && i.subcategory === sub).length})
                                 </button>
                             ))}
                         </div>
