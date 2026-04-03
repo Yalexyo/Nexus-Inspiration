@@ -3,10 +3,9 @@ services:
     build: .
     container_name: nexus-inspiration
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    network_mode: host
     environment:
-      - DB_HOST=172.20.58.37
+      - DB_HOST=127.0.0.1
       - DB_PORT=5432
       - DB_NAME=mydb
       - DB_USER=postgreadmin
