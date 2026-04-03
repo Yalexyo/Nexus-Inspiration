@@ -1,0 +1,18 @@
+services:
+  nexus:
+    build: .
+    container_name: nexus-inspiration
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=172.20.58.37
+      - DB_PORT=5432
+      - DB_NAME=mydb
+      - DB_USER=postgreadmin
+      - DB_PASSWORD=PostGre@123
+    volumes:
+      - nexus-uploads:/app/uploads
+
+volumes:
+  nexus-uploads:
