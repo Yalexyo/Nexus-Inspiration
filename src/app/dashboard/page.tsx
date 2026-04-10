@@ -29,6 +29,22 @@ import {
 import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption } from '@/lib/storage';
 import MushroomCardIcon from '@/components/MushroomCardIcon';
 
+const USER_COLORS: Record<string, string> = {
+    'user_01': 'bg-blue-500',
+    'user_02': 'bg-emerald-500',
+    'user_03': 'bg-amber-500',
+    'user_04': 'bg-rose-500',
+    'user_05': 'bg-purple-500',
+};
+const getUserColor = (userId: string) => USER_COLORS[userId] || 'bg-slate-400';
+
+const TIME_FILTERS = [
+    { value: 'all', label: '全部' },
+    { value: 'today', label: '今天' },
+    { value: 'week', label: '本周' },
+    { value: 'month', label: '本月' },
+] as const;
+
 export default function DashboardPage() {
     const router = useRouter();
     const [inspirations, setInspirations] = useState<Inspiration[]>([]);
@@ -43,6 +59,8 @@ export default function DashboardPage() {
     const [editTagInput, setEditTagInput] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<Category | null>(null);
     const [subcategoryFilter, setSubcategoryFilter] = useState<Subcategory | null>(null);
+    const [userFilter, setUserFilter] = useState<string | null>(null);
+    const [timeFilter, setTimeFilter] = useState<string>('all');
 
     const getOwnerName = (userId: string) => {
         const users = getUsers();
@@ -85,6 +103,21 @@ export default function DashboardPage() {
         if (categoryFilter === DESIGN_CATEGORY && subcategoryFilter) {
             result = result.filter(i => i.subcategory === subcategoryFilter);
         }
+        if (userFilter) {
+            result = result.filter(i => i.user_id === userFilter);
+        }
+        if (timeFilter !== 'all') {
+            const now = new Date();
+            let cutoff: Date;
+            if (timeFilter === 'today') {
+                cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            } else if (timeFilter === 'week') {
+                cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            } else {
+                cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            }
+            result = result.filter(i => new Date(i.createdAt) >= cutoff);
+        }
         if (search) {
             const q = search.toLowerCase();
             result = result.filter(i =>
@@ -95,7 +128,7 @@ export default function DashboardPage() {
             );
         }
         setFiltered(result);
-    }, [search, inspirations, categoryFilter, subcategoryFilter]);
+    }, [search, inspirations, categoryFilter, subcategoryFilter, userFilter, timeFilter]);
 
     const handleDelete = async (id: string) => {
         if (confirm('确定要删除这条灵感吗？删除后将无法恢复。')) {
@@ -343,7 +376,7 @@ export default function DashboardPage() {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                             <input
                                 className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm placeholder:text-slate-400"
-                                placeholder="Search inspirations..."
+                                placeholder="搜索灵感..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
@@ -429,6 +462,52 @@ export default function DashboardPage() {
                             ))}
                         </div>
                     )}
+
+                    {/* Row 4: User + Time Filter */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
+                            <button
+                                onClick={() => setUserFilter(null)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                                    userFilter === null
+                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                }`}
+                            >
+                                全部({inspirations.length})
+                            </button>
+                            {getUsers().map((u) => (
+                                <button
+                                    key={u.id}
+                                    onClick={() => setUserFilter(u.id)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                                        userFilter === u.id
+                                            ? 'bg-indigo-600 text-white shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${userFilter === u.id ? 'bg-white' : getUserColor(u.id)}`} />
+                                    {u.name}({inspirations.filter(i => i.user_id === u.id).length})
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm w-fit">
+                            {TIME_FILTERS.map((tf) => (
+                                <button
+                                    key={tf.value}
+                                    onClick={() => setTimeFilter(tf.value)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                                        timeFilter === tf.value
+                                            ? 'bg-indigo-600 text-white shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    {tf.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Content Grid/List */}
@@ -463,10 +542,11 @@ export default function DashboardPage() {
                                         <div className="flex-1 min-w-0">
                                             <h3 className="font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">{item.title}</h3>
                                             <p className="text-sm text-slate-500 truncate">{item.description}</p>
-                                            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
-                                                <span>{getOwnerName(item.user_id)}</span>
-                                                <span>·</span>
-                                                <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                                            <div className="flex items-center gap-1.5 mt-1 text-[11px]">
+                                                <span className={`w-2 h-2 rounded-full shrink-0 ${getUserColor(item.user_id)}`} />
+                                                <span className="font-bold text-slate-600">{getOwnerName(item.user_id)}</span>
+                                                <span className="text-slate-300">·</span>
+                                                <span className="text-slate-400">{new Date(item.createdAt).toLocaleDateString()}</span>
                                             </div>
                                         </div>
                                         <div className="hidden md:flex gap-2 items-center">
@@ -537,10 +617,13 @@ export default function DashboardPage() {
                                             <div>
                                                 <h3 className="font-bold text-lg text-slate-900 leading-tight mb-1 group-hover:text-indigo-600 transition-colors">{item.title}</h3>
                                                 <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">{item.description}</p>
-                                                <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-400">
-                                                    <span>{getOwnerName(item.user_id)}</span>
-                                                    <span>·</span>
-                                                    <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                                                <div className="flex items-center gap-1.5 mt-1.5 text-[11px]">
+                                                    <span className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center text-white text-[9px] font-bold ${getUserColor(item.user_id)}`}>
+                                                        {getOwnerName(item.user_id).charAt(0)}
+                                                    </span>
+                                                    <span className="font-medium text-slate-600">{getOwnerName(item.user_id)}</span>
+                                                    <span className="text-slate-300">·</span>
+                                                    <span className="text-slate-400">{new Date(item.createdAt).toLocaleDateString()}</span>
                                                 </div>
                                             </div>
                                             <div className="flex flex-wrap gap-1.5 mt-auto pt-2">
@@ -698,11 +781,14 @@ export default function DashboardPage() {
                             )}
 
                             <div className="p-8">
-                                <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
+                                <div className="flex items-center gap-3 text-xs font-bold tracking-wider text-slate-400 mb-4">
+                                    <span className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-white text-[10px] font-bold ${getUserColor(selectedItem.user_id)}`}>
+                                        {getOwnerName(selectedItem.user_id).charAt(0)}
+                                    </span>
+                                    <span className="text-slate-600">{getOwnerName(selectedItem.user_id)}</span>
+                                    <span>·</span>
                                     <span className="bg-slate-100 px-2 py-1 rounded-md text-slate-500">#{selectedItem.id.substring(0, 6)}</span>
-                                    <span>•</span>
-                                    <span>{getOwnerName(selectedItem.user_id)}</span>
-                                    <span>•</span>
+                                    <span>·</span>
                                     <span>{new Date(selectedItem.createdAt).toLocaleDateString()}</span>
                                 </div>
 
