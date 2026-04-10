@@ -13,5 +13,16 @@ services:
     volumes:
       - nexus-uploads:/app/uploads
 
+  nginx:
+    build: ./nginx
+    container_name: nexus-nginx
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      - nexus
+    volumes:
+      - nginx-certs:/etc/nginx/ssl
+
 volumes:
   nexus-uploads:
+  nginx-certs:
