@@ -27,6 +27,7 @@ import {
     FileText
 } from 'lucide-react';
 import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption } from '@/lib/storage';
+import MushroomCardIcon from '@/components/MushroomCardIcon';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -279,10 +280,10 @@ export default function DashboardPage() {
                 <div className="w-full max-w-7xl px-6 flex items-center justify-between h-full">
                     <div className="flex items-center gap-8">
                         <div className="text-xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-                            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
-                                <Plus size={20} strokeWidth={3} />
+                            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-indigo-600">
+                                <MushroomCardIcon size={22} />
                             </div>
-                            NEXUS
+                            灵感卡片
                         </div>
                         <nav className="flex items-center gap-6">
                             <Link href="/dashboard" className="text-sm font-bold text-slate-900 border-b-2 border-indigo-600 pb-4 mt-4">Dashboard</Link>
@@ -310,7 +311,7 @@ export default function DashboardPage() {
             {/* Mobile Header - Sticky Top */}
             <div className="md:hidden sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
                 <header className="h-14 flex items-center justify-between px-4">
-                    <div className="text-lg font-black tracking-tight text-slate-900">Nexus</div>
+                    <div className="text-lg font-black tracking-tight text-slate-900">灵感卡片</div>
                     <div className="flex items-center gap-2">
                         <Button
                             variant="ghost"
@@ -550,13 +551,13 @@ export default function DashboardPage() {
                     <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" onClick={() => setSelectedItem(null)} />
                     <div className="relative w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
                         <header className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                            <h2 className="text-lg font-bold text-slate-900">Inspiration Details</h2>
+                            <h2 className="text-lg font-bold text-slate-900">灵感详情</h2>
                             <div className="flex items-center gap-2">
                                 {!isEditing && isOwner(selectedItem) && (
                                     <button
                                         onClick={handleEditStart}
                                         className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-all"
-                                        title="Edit Inspiration"
+                                        title="编辑灵感"
                                     >
                                         <div className="w-5 h-5 flex items-center justify-center">
                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -924,7 +925,7 @@ export default function DashboardPage() {
                                     onClick={() => handleDelete(selectedItem.id)}
                                     className="h-12 w-full flex items-center justify-center gap-2 font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                                 >
-                                    <Trash2 size={18} /> Delete Inspiration
+                                    <Trash2 size={18} /> 删除灵感
                                 </button>
                             ) : (
                                 <div className="h-12 w-full flex items-center justify-center text-sm text-slate-400">

@@ -119,7 +119,7 @@ export default function SettingsPage() {
 
                 <div className="mt-8 p-6 rounded-2xl bg-indigo-900 text-white overflow-hidden relative">
                     <div className="relative z-10">
-                        <h3 className="font-bold text-lg mb-2">Nexus Pro Perks</h3>
+                        <h3 className="font-bold text-lg mb-2">灵感卡片 Pro</h3>
                         <p className="text-indigo-200 text-sm mb-4">Unlimited cloud sync, collaborative boards, and advanced AI models.</p>
                         <button className="bg-white text-indigo-900 px-4 py-2 rounded-lg text-sm font-bold shadow-xl">Upgrade Soon</button>
                     </div>

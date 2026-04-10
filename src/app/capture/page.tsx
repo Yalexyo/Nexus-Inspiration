@@ -146,7 +146,7 @@ export default function CapturePage() {
                 >
                     <X size={20} />
                 </button>
-                <div className="text-sm font-bold text-slate-900 uppercase tracking-wider">New Inspiration</div>
+                <div className="text-sm font-bold text-slate-900 tracking-wider">新建灵感</div>
                 <div className="w-9" />
             </header>
 
@@ -433,7 +433,7 @@ export default function CapturePage() {
                             className="w-full bg-indigo-600 text-white h-12 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:translate-y-[-1px] active:translate-y-0 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                            Save Inspiration
+                            保存灵感
                         </button>
                     </div>
                 </div>

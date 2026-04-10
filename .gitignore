@@ -43,3 +43,6 @@ next-env.d.ts
 
 # uploads
 /uploads
+
+# claude code
+.claude/

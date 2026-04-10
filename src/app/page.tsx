@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getUsers, login, logout, addUser } from '@/lib/auth';
 import { ArrowRight, Plus, UserPlus } from 'lucide-react';
+import MushroomCardIcon from '@/components/MushroomCardIcon';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -74,11 +75,11 @@ export default function LoginPage() {
 
         {/* Header Section */}
         <div className="pt-8 pb-4 px-8 text-center flex flex-col items-center">
-          <div className="w-14 h-14 bg-gradient-to-tr from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-4 rotate-3 hover:rotate-6 transition-transform duration-300">
-            <span className="text-white text-2xl font-black">N</span>
+          <div className="w-14 h-14 bg-gradient-to-tr from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-4 rotate-3 hover:rotate-6 transition-transform duration-300 text-indigo-600">
+            <MushroomCardIcon size={36} />
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Nexus</h1>
-          <p className="text-slate-500 font-medium text-sm">Your Inspiration Library</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">灵感卡片</h1>
+          <p className="text-slate-500 font-medium text-sm">团队灵感收集平台</p>
         </div>
 
         <div className="p-8 pt-2">

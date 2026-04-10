@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Nexus | 灵感中枢",
-  description: "Capture, Structure, and Organize your ideas with AI.",
+  title: "灵感卡片",
+  description: "团队灵感收集与管理平台",
 };
 
 export default function RootLayout({
