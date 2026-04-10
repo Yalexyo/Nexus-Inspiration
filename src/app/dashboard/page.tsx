@@ -41,8 +41,8 @@ export default function DashboardPage() {
     const [activeAssetIndex, setActiveAssetIndex] = useState(0);
     const [currentUserId, setCurrentUserId] = useState<string>('');
     const [editTagInput, setEditTagInput] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState<Category>(CATEGORIES[0]);
-    const [subcategoryFilter, setSubcategoryFilter] = useState<Subcategory>(SUBCATEGORIES[0]);
+    const [categoryFilter, setCategoryFilter] = useState<Category | null>(null);
+    const [subcategoryFilter, setSubcategoryFilter] = useState<Subcategory | null>(null);
 
     const getOwnerName = (userId: string) => {
         const users = getUsers();
@@ -72,15 +72,17 @@ export default function DashboardPage() {
     // Reset subcategory filter when category filter changes
     useEffect(() => {
         if (categoryFilter === DESIGN_CATEGORY) {
-            setSubcategoryFilter(SUBCATEGORIES[0]);
+            setSubcategoryFilter(null);
         }
     }, [categoryFilter]);
 
     // Filter Logic
     useEffect(() => {
         let result = inspirations;
-        result = result.filter(i => i.category === categoryFilter);
-        if (categoryFilter === DESIGN_CATEGORY) {
+        if (categoryFilter) {
+            result = result.filter(i => i.category === categoryFilter);
+        }
+        if (categoryFilter === DESIGN_CATEGORY && subcategoryFilter) {
             result = result.filter(i => i.subcategory === subcategoryFilter);
         }
         if (search) {
@@ -96,7 +98,7 @@ export default function DashboardPage() {
     }, [search, inspirations, categoryFilter, subcategoryFilter]);
 
     const handleDelete = async (id: string) => {
-        if (confirm('Are you sure you want to delete this inspiration? This will permanently delete the content from the database and storage.')) {
+        if (confirm('确定要删除这条灵感吗？删除后将无法恢复。')) {
             try {
                 await deleteInspiration(id);
                 setInspirations(prev => prev.filter(i => i.id !== id));
@@ -286,7 +288,7 @@ export default function DashboardPage() {
                             灵感卡片
                         </div>
                         <nav className="flex items-center gap-6">
-                            <Link href="/dashboard" className="text-sm font-bold text-slate-900 border-b-2 border-indigo-600 pb-4 mt-4">Dashboard</Link>
+                            <Link href="/dashboard" className="text-sm font-bold text-slate-900 border-b-2 border-indigo-600 pb-4 mt-4">仪表盘</Link>
                         </nav>
                     </div>
                     <div className="flex items-center gap-4">
@@ -366,7 +368,7 @@ export default function DashboardPage() {
                             <Link href="/capture" className="flex-1 md:flex-none">
                                 <button className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                                     <Plus size={18} strokeWidth={2.5} />
-                                    <span>Add New</span>
+                                    <span>新建</span>
                                 </button>
                             </Link>
                         </div>
@@ -374,6 +376,16 @@ export default function DashboardPage() {
 
                     {/* Row 2: Category Filter */}
                     <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
+                        <button
+                            onClick={() => setCategoryFilter(null)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                                categoryFilter === null
+                                    ? 'bg-indigo-600 text-white shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                            }`}
+                        >
+                            全部({inspirations.length})
+                        </button>
                         {CATEGORIES.map((cat) => (
                             <button
                                 key={cat}
@@ -392,6 +404,16 @@ export default function DashboardPage() {
                     {/* Row 3: Subcategory Filter (only for 设计灵感) */}
                     {categoryFilter === DESIGN_CATEGORY && (
                         <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
+                            <button
+                                onClick={() => setSubcategoryFilter(null)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                                    subcategoryFilter === null
+                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                }`}
+                            >
+                                全部({inspirations.filter(i => i.category === DESIGN_CATEGORY).length})
+                            </button>
                             {SUBCATEGORIES.map((sub) => (
                                 <button
                                     key={sub}
@@ -415,8 +437,8 @@ export default function DashboardPage() {
                         <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
                             <Search size={32} className="text-slate-300" />
                         </div>
-                        <p className="font-medium text-slate-500">No inspirations found</p>
-                        <p className="text-sm text-slate-400 mt-1">Try a different search term or add a new entry.</p>
+                        <p className="font-medium text-slate-500">暂无灵感</p>
+                        <p className="text-sm text-slate-400 mt-1">试试其他搜索词，或新建一条灵感</p>
                     </div>
                 ) : (
                     <>
@@ -494,7 +516,7 @@ export default function DashboardPage() {
                                                     ) : item.assets[0].type === 'website' ? (
                                                         <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-400 group-hover:bg-indigo-100 transition-colors">
                                                             <Globe size={48} />
-                                                            <span className="text-xs font-bold mt-2 opacity-60">WEBSITE</span>
+                                                            <span className="text-xs font-bold mt-2 opacity-60">网站</span>
                                                         </div>
                                                     ) : (
                                                         <img
@@ -592,14 +614,14 @@ export default function DashboardPage() {
                                                         }
                                                     }}
                                                     className="absolute top-4 right-4 p-2 bg-red-500/80 hover:bg-red-600 text-white rounded-full transition-colors z-10"
-                                                    title="Remove This Asset"
+                                                    title="移除"
                                                 >
                                                     <Trash2 size={16} />
                                                 </button>
                                             </>
                                         ) : (
                                             <div className="flex flex-col items-center">
-                                                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Visual Input Required</p>
+                                                <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">请添加图片或视频</p>
                                             </div>
                                         )}
                                     </div>
@@ -608,7 +630,7 @@ export default function DashboardPage() {
                                     <div className="p-4 flex gap-3 overflow-x-auto bg-white border-t border-slate-100 scrollbar-hide items-center">
                                         <label className="shrink-0 w-24 h-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all text-slate-400 hover:text-indigo-500" title="支持图片、视频、PDF，单文件最大120MB">
                                             <Plus size={20} />
-                                            <span className="text-[10px] font-bold">Add File</span>
+                                            <span className="text-[10px] font-bold">添加文件</span>
                                             <span className="text-[7px] opacity-70 leading-tight">图片/视频/PDF</span>
                                             <input type="file" className="hidden" accept="image/*,video/*,.pdf" multiple onChange={handleAssetUpload} />
                                         </label>
@@ -618,7 +640,7 @@ export default function DashboardPage() {
                                             className="shrink-0 w-24 h-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-all text-slate-400 hover:text-indigo-500"
                                         >
                                             <LinkIcon size={20} />
-                                            <span className="text-[10px] font-bold">Add Link</span>
+                                            <span className="text-[10px] font-bold">添加链接</span>
                                         </button>
 
                                         {editForm.assets.map((asset, idx) => (
@@ -687,7 +709,7 @@ export default function DashboardPage() {
                                 {isEditing && editForm ? (
                                     <div className="space-y-6">
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Category</label>
+                                            <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1 block mb-2">分类</label>
                                             <div className="flex flex-wrap gap-2">
                                                 {CATEGORIES.map(cat => (
                                                     <button
@@ -712,7 +734,7 @@ export default function DashboardPage() {
 
                                         {editForm.category === DESIGN_CATEGORY && (
                                             <div>
-                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Type</label>
+                                                <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1 block mb-2">子分类</label>
                                                 <div className="flex flex-wrap gap-2">
                                                     {SUBCATEGORIES.map(sub => (
                                                         <button
@@ -733,7 +755,7 @@ export default function DashboardPage() {
                                         )}
 
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Title</label>
+                                            <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1 block mb-2">标题</label>
                                             <input
                                                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                                                 value={editForm.title}
@@ -742,16 +764,54 @@ export default function DashboardPage() {
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Detailed Description</label>
-                                            <textarea
-                                                className="w-full min-h-[150px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
-                                                value={editForm.description}
-                                                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                            <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1 block mb-2">自定义标签</label>
+                                            <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl min-h-[60px]">
+                                                {editForm.tags.map(tag => (
+                                                    <div key={tag} className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 bg-white text-indigo-700 border border-indigo-100 rounded-full text-xs font-bold shadow-sm">
+                                                        #{tag}
+                                                        <button
+                                                            onClick={() => setEditForm({ ...editForm, tags: editForm.tags.filter(t => t !== tag) })}
+                                                            className="p-0.5 hover:bg-slate-100 rounded-full transition-colors ml-0.5 text-slate-400 hover:text-red-500"
+                                                        >
+                                                            <X size={10} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                <button
+                                                    onClick={() => {
+                                                        const t = editTagInput.trim();
+                                                        if (t && !editForm.tags.includes(t)) {
+                                                            setEditForm({ ...editForm, tags: [...editForm.tags, t] });
+                                                            setEditTagInput('');
+                                                        }
+                                                    }}
+                                                    disabled={!editTagInput.trim()}
+                                                    className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-bold hover:bg-indigo-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                                                >
+                                                    <Plus size={12} /> 添加
+                                                </button>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={editTagInput}
+                                                onChange={(e) => setEditTagInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        const t = editTagInput.trim();
+                                                        if (t && !editForm.tags.includes(t)) {
+                                                            setEditForm({ ...editForm, tags: [...editForm.tags, t] });
+                                                            setEditTagInput('');
+                                                        }
+                                                    }
+                                                }}
+                                                placeholder="输入标签后按回车..."
+                                                className="w-full h-9 px-3 mt-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">信息来源</label>
+                                            <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1 block mb-2">信息来源</label>
                                             <div className="flex flex-wrap gap-2 mb-2">
                                                 {SOURCE_OPTIONS.map(opt => (
                                                     <button
@@ -777,61 +837,23 @@ export default function DashboardPage() {
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">
-                                                设计启示 <span className="text-red-500">*</span>
-                                            </label>
+                                            <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1 block mb-2">详细描述</label>
                                             <textarea
-                                                className="w-full min-h-[80px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
-                                                placeholder="这个灵感对设计有什么启发？..."
-                                                value={editForm.design_insight}
-                                                onChange={(e) => setEditForm({ ...editForm, design_insight: e.target.value })}
+                                                className="w-full min-h-[150px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
+                                                value={editForm.description}
+                                                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1 block mb-2">Tags</label>
-                                            <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl min-h-[60px]">
-                                                {editForm.tags.map(tag => (
-                                                    <div key={tag} className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 bg-white text-indigo-700 border border-indigo-100 rounded-full text-xs font-bold shadow-sm">
-                                                        #{tag}
-                                                        <button
-                                                            onClick={() => setEditForm({ ...editForm, tags: editForm.tags.filter(t => t !== tag) })}
-                                                            className="p-0.5 hover:bg-slate-100 rounded-full transition-colors ml-0.5 text-slate-400 hover:text-red-500"
-                                                        >
-                                                            <X size={10} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                                <button
-                                                    onClick={() => {
-                                                        const t = editTagInput.trim();
-                                                        if (t && !editForm.tags.includes(t)) {
-                                                            setEditForm({ ...editForm, tags: [...editForm.tags, t] });
-                                                            setEditTagInput('');
-                                                        }
-                                                    }}
-                                                    disabled={!editTagInput.trim()}
-                                                    className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-bold hover:bg-indigo-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-                                                >
-                                                    <Plus size={12} /> Add
-                                                </button>
-                                            </div>
-                                            <input
-                                                type="text"
-                                                value={editTagInput}
-                                                onChange={(e) => setEditTagInput(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        const t = editTagInput.trim();
-                                                        if (t && !editForm.tags.includes(t)) {
-                                                            setEditForm({ ...editForm, tags: [...editForm.tags, t] });
-                                                            setEditTagInput('');
-                                                        }
-                                                    }
-                                                }}
-                                                placeholder="Type a tag and press Enter..."
-                                                className="w-full h-9 px-3 mt-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                            <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1 block mb-2">
+                                                设计启示 <span className="text-red-500">*</span>
+                                            </label>
+                                            <textarea
+                                                className="w-full min-h-[80px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
+                                                placeholder="这个灵感如何应用到我们的工作中？可以从设计方法、用户体验、技术实现等角度思考..."
+                                                value={editForm.design_insight}
+                                                onChange={(e) => setEditForm({ ...editForm, design_insight: e.target.value })}
                                             />
                                         </div>
                                     </div>
@@ -843,7 +865,7 @@ export default function DashboardPage() {
 
                                         <div className="space-y-6">
                                             <div>
-                                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Category</h3>
+                                                <h3 className="text-xs font-bold text-slate-400 tracking-widest mb-3">分类</h3>
                                                 <div className="flex flex-wrap gap-2">
                                                     <span className="px-3 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-bold rounded-full border border-indigo-200">
                                                         {selectedItem.category}
@@ -856,9 +878,20 @@ export default function DashboardPage() {
                                                 </div>
                                             </div>
 
+                                            <div>
+                                                <h3 className="text-xs font-bold text-slate-400 tracking-widest mb-3">自定义标签</h3>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {selectedItem.tags?.map(tag => (
+                                                        <span key={tag} className="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full border border-indigo-100">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
                                             {(selectedItem.source || selectedItem.source_text) && (
                                                 <div>
-                                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">信息来源</h3>
+                                                    <h3 className="text-xs font-bold text-slate-400 tracking-widest mb-3">信息来源</h3>
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         {selectedItem.source && (
                                                             <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-sm font-bold rounded-full border border-emerald-200">
@@ -872,32 +905,21 @@ export default function DashboardPage() {
                                                 </div>
                                             )}
 
+                                            <div className="prose prose-slate">
+                                                <h3 className="text-xs font-bold text-slate-400 tracking-widest mb-3">描述</h3>
+                                                <p className="text-slate-600 leading-relaxed text-lg whitespace-pre-wrap">
+                                                    {selectedItem.description}
+                                                </p>
+                                            </div>
+
                                             {selectedItem.design_insight && (
                                                 <div className="prose prose-slate">
-                                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">设计启示</h3>
+                                                    <h3 className="text-xs font-bold text-slate-400 tracking-widest mb-3">设计启示</h3>
                                                     <p className="text-slate-600 leading-relaxed text-lg whitespace-pre-wrap">
                                                         {selectedItem.design_insight}
                                                     </p>
                                                 </div>
                                             )}
-
-                                            <div>
-                                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Custom Tags</h3>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {selectedItem.tags?.map(tag => (
-                                                        <span key={tag} className="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full border border-indigo-100">
-                                                            {tag}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="prose prose-slate">
-                                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Description</h3>
-                                                <p className="text-slate-600 leading-relaxed text-lg whitespace-pre-wrap">
-                                                    {selectedItem.description}
-                                                </p>
-                                            </div>
                                         </div>
                                     </>
                                 )}
@@ -911,13 +933,13 @@ export default function DashboardPage() {
                                         onClick={() => setIsEditing(false)}
                                         className="h-12 flex items-center justify-center gap-2 font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition-colors bg-white border border-slate-200"
                                     >
-                                        Cancel
+                                        取消
                                     </button>
                                     <button
                                         onClick={handleEditSave}
                                         className="h-12 text-white flex items-center justify-center gap-2 font-bold rounded-xl shadow-lg shadow-indigo-200 bg-indigo-600 hover:bg-indigo-700 transition-all hover:translate-y-[-1px]"
                                     >
-                                        Save Changes
+                                        保存修改
                                     </button>
                                 </>
                             ) : isOwner(selectedItem) ? (
@@ -929,7 +951,7 @@ export default function DashboardPage() {
                                 </button>
                             ) : (
                                 <div className="h-12 w-full flex items-center justify-center text-sm text-slate-400">
-                                    Shared by {getOwnerName(selectedItem.user_id)}
+                                    由 {getOwnerName(selectedItem.user_id)} 分享
                                 </div>
                             )}
                         </footer>

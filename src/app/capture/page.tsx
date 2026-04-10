@@ -275,8 +275,9 @@ export default function CapturePage() {
                 {/* Right: Input Zone */}
                 <div className="flex-1 flex flex-col h-full bg-white md:max-w-md w-full">
                     <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6">
+                        {/* 01 / 分类 */}
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">01 / Category</label>
+                            <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1">01 / 分类</label>
                             <div className="flex flex-wrap gap-2">
                                 {CATEGORIES.map(cat => (
                                     <button
@@ -295,9 +296,10 @@ export default function CapturePage() {
                             </div>
                         </div>
 
+                        {/* 01.1 / 子分类 */}
                         {category === DESIGN_CATEGORY && (
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">01.1 / Type</label>
+                                <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1">01.1 / 子分类</label>
                                 <div className="flex flex-wrap gap-2">
                                     {SUBCATEGORIES.map(sub => (
                                         <button
@@ -317,66 +319,20 @@ export default function CapturePage() {
                             </div>
                         )}
 
+                        {/* 02 / 标题 */}
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">02 / Title</label>
+                            <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1">02 / 标题</label>
                             <input
                                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                                placeholder="Give it a name..."
+                                placeholder="给它起个名字..."
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                             />
                         </div>
 
+                        {/* 03 / 自定义标签 */}
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">03 / Description</label>
-                            <textarea
-                                className="w-full min-h-[100px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
-                                placeholder="Describe what you see..."
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">04 / 信息来源</label>
-                            <div className="flex flex-wrap gap-2">
-                                {SOURCE_OPTIONS.map(opt => (
-                                    <button
-                                        key={opt}
-                                        type="button"
-                                        onClick={() => setSource(source === opt ? null : opt)}
-                                        className={`h-9 px-4 rounded-lg text-sm font-bold transition-all ${
-                                            source === opt
-                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
-                                                : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'
-                                        }`}
-                                    >
-                                        {opt}
-                                    </button>
-                                ))}
-                            </div>
-                            <input
-                                className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
-                                placeholder="补充说明（选填）..."
-                                value={sourceText}
-                                onChange={(e) => setSourceText(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">
-                                05 / 设计启示 <span className="text-red-500">*</span>
-                            </label>
-                            <textarea
-                                className="w-full min-h-[80px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
-                                placeholder="这个灵感对设计有什么启发？..."
-                                value={designInsight}
-                                onChange={(e) => setDesignInsight(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">06 / Custom Tags</label>
+                            <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1">03 / 自定义标签</label>
                             <div className="flex flex-wrap gap-2 items-center">
                                 {tags.map(tag => (
                                     <div key={tag} className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full text-xs font-bold animate-in zoom-in duration-300">
@@ -405,7 +361,7 @@ export default function CapturePage() {
                                             }
                                         }
                                     }}
-                                    placeholder="Type a tag and press Enter..."
+                                    placeholder="输入标签后按回车..."
                                     className="flex-1 h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                                 />
                                 <button
@@ -420,9 +376,60 @@ export default function CapturePage() {
                                     disabled={!tagInput.trim()}
                                     className="h-9 px-3 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                                 >
-                                    <Plus size={14} /> Add
+                                    <Plus size={14} /> 添加
                                 </button>
                             </div>
+                        </div>
+
+                        {/* 04 / 信息来源 */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1">04 / 信息来源</label>
+                            <div className="flex flex-wrap gap-2">
+                                {SOURCE_OPTIONS.map(opt => (
+                                    <button
+                                        key={opt}
+                                        type="button"
+                                        onClick={() => setSource(source === opt ? null : opt)}
+                                        className={`h-9 px-4 rounded-lg text-sm font-bold transition-all ${
+                                            source === opt
+                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                                                : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50'
+                                        }`}
+                                    >
+                                        {opt}
+                                    </button>
+                                ))}
+                            </div>
+                            <input
+                                className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                placeholder="补充说明（选填）..."
+                                value={sourceText}
+                                onChange={(e) => setSourceText(e.target.value)}
+                            />
+                        </div>
+
+                        {/* 05 / 描述 */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1">05 / 描述</label>
+                            <textarea
+                                className="w-full min-h-[100px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
+                                placeholder="描述你看到的内容..."
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                            />
+                        </div>
+
+                        {/* 06 / 设计启示 */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1">
+                                06 / 设计启示 <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                                className="w-full min-h-[80px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
+                                placeholder="这个灵感如何应用到我们的工作中？可以从设计方法、用户体验、技术实现等角度思考..."
+                                value={designInsight}
+                                onChange={(e) => setDesignInsight(e.target.value)}
+                            />
                         </div>
                     </div>
 
