@@ -231,7 +231,7 @@ export default function DashboardPage() {
                 <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-500 gap-1 p-2 text-center">
                     <Globe size={24} />
                     <span className="text-[10px] leading-tight font-medium truncate w-full px-1">
-                        {typeof asset.content === 'string' ? new URL(asset.content).hostname : 'Link'}
+                        {typeof asset.content === 'string' ? (() => { try { return new URL(asset.content as string).hostname; } catch { return 'Link'; } })() : 'Link'}
                     </span>
                 </div>
             );
