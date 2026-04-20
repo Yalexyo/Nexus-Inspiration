@@ -425,7 +425,7 @@ export default function CapturePage() {
                                 06 / 设计启示 <span className="text-red-500">*</span>
                             </label>
                             <textarea
-                                className="w-full min-h-[80px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
+                                className="w-full min-h-[200px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-y leading-relaxed"
                                 placeholder="这个灵感如何应用到我们的工作中？可以从设计方法、用户体验、技术实现等角度思考..."
                                 value={designInsight}
                                 onChange={(e) => setDesignInsight(e.target.value)}
