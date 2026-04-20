@@ -61,6 +61,8 @@ export default function DashboardPage() {
     const [subcategoryFilter, setSubcategoryFilter] = useState<Subcategory | null>(null);
     const [userFilter, setUserFilter] = useState<string | null>(null);
     const [timeFilter, setTimeFilter] = useState<string>('all');
+    const [isViewOnly, setIsViewOnly] = useState(false);
+    const [copiedShare, setCopiedShare] = useState(false);
 
     const getOwnerName = (userId: string) => {
         const users = getUsers();
@@ -70,14 +72,16 @@ export default function DashboardPage() {
 
     const isOwner = (item: Inspiration) => currentUserId === item.user_id;
 
-    // Auth Check
+    // Auth Check (allow view-only for non-logged-in visitors)
     useEffect(() => {
         const user = getCurrentUser();
-        if (!user) {
-            router.replace('/');
-            return;
+        if (user) {
+            setCurrentUserId(user.id);
+            setIsViewOnly(false);
+        } else {
+            setCurrentUserId('');
+            setIsViewOnly(true);
         }
-        setCurrentUserId(user.id);
 
         const load = async () => {
             const data = await getInspirations();
@@ -86,6 +90,14 @@ export default function DashboardPage() {
         };
         load();
     }, [router]);
+
+    const handleShare = (id: string) => {
+        const url = `${window.location.origin}/view/${id}`;
+        navigator.clipboard.writeText(url).then(() => {
+            setCopiedShare(true);
+            setTimeout(() => setCopiedShare(false), 2000);
+        });
+    };
 
     // Reset subcategory filter when category filter changes
     useEffect(() => {
@@ -325,20 +337,28 @@ export default function DashboardPage() {
                         </nav>
                     </div>
                     <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => {
-                                const { logout } = require('@/lib/auth');
-                                logout();
-                                router.replace('/');
-                            }}
-                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
-                            title="Log Out"
-                        >
-                            <LogOut size={20} />
-                        </button>
-                        <div className="w-9 h-9 bg-indigo-600 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-white text-xs font-bold">
-                            {currentUserId ? getOwnerName(currentUserId).charAt(0) : ''}
-                        </div>
+                        {isViewOnly ? (
+                            <Link href="/" className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-sm">
+                                登录
+                            </Link>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        const { logout } = require('@/lib/auth');
+                                        logout();
+                                        router.replace('/');
+                                    }}
+                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                                    title="退出登录"
+                                >
+                                    <LogOut size={20} />
+                                </button>
+                                <div className={`w-9 h-9 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-white text-xs font-bold ${currentUserId ? getUserColor(currentUserId) : 'bg-indigo-600'}`}>
+                                    {currentUserId ? getOwnerName(currentUserId).charAt(0) : ''}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </header>
@@ -356,11 +376,17 @@ export default function DashboardPage() {
                         >
                             {viewMode === 'list' ? <LayoutGrid size={20} /> : <ListIcon size={20} />}
                         </Button>
-                        <Link href="/settings">
-                            <Button variant="ghost" size="icon" className="text-slate-500 hover:bg-slate-100 rounded-full">
-                                <Settings size={20} />
-                            </Button>
-                        </Link>
+                        {isViewOnly ? (
+                            <Link href="/" className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-all">
+                                登录
+                            </Link>
+                        ) : (
+                            <Link href="/settings">
+                                <Button variant="ghost" size="icon" className="text-slate-500 hover:bg-slate-100 rounded-full">
+                                    <Settings size={20} />
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </header>
             </div>
@@ -397,13 +423,15 @@ export default function DashboardPage() {
                                     <LayoutGrid size={18} />
                                 </button>
                             </div>
-                            {/* Add New Button */}
-                            <Link href="/capture" className="flex-1 md:flex-none">
-                                <button className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                                    <Plus size={18} strokeWidth={2.5} />
-                                    <span>新建</span>
-                                </button>
-                            </Link>
+                            {/* Add New Button (hidden for view-only visitors) */}
+                            {!isViewOnly && (
+                                <Link href="/capture" className="flex-1 md:flex-none">
+                                    <button className="w-full md:w-auto bg-indigo-600 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
+                                        <Plus size={18} strokeWidth={2.5} />
+                                        <span>新建</span>
+                                    </button>
+                                </Link>
+                            )}
                         </div>
                     </div>
 
@@ -658,6 +686,22 @@ export default function DashboardPage() {
                         <header className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                             <h2 className="text-lg font-bold text-slate-900">灵感详情</h2>
                             <div className="flex items-center gap-2">
+                                {!isEditing && (
+                                    <button
+                                        onClick={() => handleShare(selectedItem.id)}
+                                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-all flex items-center gap-1.5"
+                                        title="复制分享链接"
+                                    >
+                                        {copiedShare ? (
+                                            <>
+                                                <Check size={18} className="text-emerald-600" />
+                                                <span className="text-xs font-bold text-emerald-600">已复制</span>
+                                            </>
+                                        ) : (
+                                            <LinkIcon size={18} />
+                                        )}
+                                    </button>
+                                )}
                                 {!isEditing && isOwner(selectedItem) && (
                                     <button
                                         onClick={handleEditStart}

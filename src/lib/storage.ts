@@ -60,32 +60,44 @@ export async function uploadAsset(assetContent: string | File): Promise<string> 
     return assetContent;
 }
 
-export async function getInspirations(): Promise<Inspiration[]> {
-    const user = getCurrentUser();
-    if (!user) return [];
+function mapInspiration(item: any): Inspiration {
+    return {
+        id: item.id,
+        user_id: item.user_id,
+        category: item.category || '政策',
+        subcategory: item.subcategory || null,
+        title: item.title,
+        description: item.description,
+        source: item.source || null,
+        source_text: item.source_text || '',
+        design_insight: item.design_insight || '',
+        assets: item.assets || [],
+        tags: item.tags || [],
+        createdAt: item.created_at
+    };
+}
 
+export async function getInspirations(): Promise<Inspiration[]> {
     try {
         const res = await fetch('/api/inspirations');
         if (!res.ok) return [];
         const data = await res.json();
-
-        return data.map((item: any) => ({
-            id: item.id,
-            user_id: item.user_id,
-            category: item.category || '政策',
-            subcategory: item.subcategory || null,
-            title: item.title,
-            description: item.description,
-            source: item.source || null,
-            source_text: item.source_text || '',
-            design_insight: item.design_insight || '',
-            assets: item.assets || [],
-            tags: item.tags || [],
-            createdAt: item.created_at
-        }));
+        return data.map(mapInspiration);
     } catch (error) {
         console.error("Fetch error:", error);
         return [];
+    }
+}
+
+export async function getInspirationById(id: string): Promise<Inspiration | null> {
+    try {
+        const res = await fetch(`/api/inspirations/${encodeURIComponent(id)}`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        return mapInspiration(data);
+    } catch (error) {
+        console.error("Fetch error:", error);
+        return null;
     }
 }
 
