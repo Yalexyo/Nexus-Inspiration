@@ -8,13 +8,13 @@ export interface MediaAsset {
     preview?: string; // For UI display (blob URL)
 }
 
-export const CATEGORIES = ['政策', '经济', '社会', '技术', '设计灵感'] as const;
+export const CATEGORIES = ['政策', '经济', '社会', '技术', '创意'] as const;
 export type Category = typeof CATEGORIES[number];
 
 export const SUBCATEGORIES = ['产品', '品牌', '软件UI', '视频', '其他'] as const;
 export type Subcategory = typeof SUBCATEGORIES[number];
 
-export const DESIGN_CATEGORY = '设计灵感' as const;
+export const DESIGN_CATEGORY = '创意' as const;
 
 export const SOURCE_OPTIONS = ['网络', '展会', '交流会', '客户现场', '其他'] as const;
 export type SourceOption = typeof SOURCE_OPTIONS[number];

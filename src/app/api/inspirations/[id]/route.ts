@@ -36,9 +36,9 @@ export async function PUT(
             return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
         }
 
-        // When category is updated to non-设计灵感, force subcategory to null
+        // When category is updated to non-创意, force subcategory to null
         let finalSubcategory = subcategory;
-        if (category !== undefined && category !== '设计灵感') {
+        if (category !== undefined && category !== '创意') {
             finalSubcategory = null;
         }
 

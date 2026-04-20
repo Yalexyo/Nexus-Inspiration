@@ -464,7 +464,7 @@ export default function DashboardPage() {
                         ))}
                     </div>
 
-                    {/* Row 3: Subcategory Filter (only for 设计灵感) */}
+                    {/* Row 3: Subcategory Filter (only for 创意) */}
                     {categoryFilter === DESIGN_CATEGORY && (
                         <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
                             <button

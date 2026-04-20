@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
         }
 
         const finalCategory = category || '政策';
-        // Non-设计灵感 categories must have null subcategory
-        const finalSubcategory = finalCategory === '设计灵感' ? (subcategory || null) : null;
+        // Non-创意 categories must have null subcategory
+        const finalSubcategory = finalCategory === '创意' ? (subcategory || null) : null;
 
         const { rows } = await pool.query(
             `INSERT INTO inspirations (user_id, category, subcategory, title, description, source, source_text, design_insight, assets, tags)

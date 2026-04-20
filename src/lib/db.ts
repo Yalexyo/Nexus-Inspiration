@@ -45,6 +45,11 @@ export async function initDatabase() {
             ALTER TABLE inspirations ALTER COLUMN subcategory SET DEFAULT NULL;
         `);
 
+        // Migration: rename 设计灵感 → 创意
+        await client.query(`
+            UPDATE inspirations SET category = '创意' WHERE category = '设计灵感';
+        `);
+
         // Migration: English categories → Chinese
         await client.query(`
             UPDATE inspirations SET category = '政策' WHERE category = 'Policy';
@@ -64,20 +69,20 @@ export async function initDatabase() {
             UPDATE inspirations SET subcategory = '其他' WHERE subcategory = '平面';
         `);
 
-        // Migration: non-设计灵感 rows should have subcategory = NULL
+        // Migration: non-创意 rows should have subcategory = NULL
         await client.query(`
-            UPDATE inspirations SET subcategory = NULL WHERE category != '设计灵感';
+            UPDATE inspirations SET subcategory = NULL WHERE category != '创意';
         `);
 
-        // Migration: existing records without a valid Chinese category → 设计灵感/其他
+        // Migration: existing records without a valid Chinese category → 创意/其他
         await client.query(`
-            UPDATE inspirations SET category = '设计灵感', subcategory = '其他'
-            WHERE category NOT IN ('政策', '经济', '社会', '技术', '设计灵感');
+            UPDATE inspirations SET category = '创意', subcategory = '其他'
+            WHERE category NOT IN ('政策', '经济', '社会', '技术', '创意');
         `);
-        // Migration: records already in 设计灵感 but missing subcategory → 其他
+        // Migration: records already in 创意 but missing subcategory → 其他
         await client.query(`
             UPDATE inspirations SET subcategory = '其他'
-            WHERE category = '设计灵感' AND (subcategory IS NULL OR subcategory = '');
+            WHERE category = '创意' AND (subcategory IS NULL OR subcategory = '');
         `);
 
         // Add source, source_text, design_insight columns if missing
