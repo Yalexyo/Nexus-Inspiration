@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
-// GET single inspiration (public, no auth)
+// GET single inspiration by uuid or card_no (public, no auth)
 export async function GET(
     _req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { id } = await params;
-        const { rows } = await pool.query(
-            'SELECT * FROM inspirations WHERE id = $1',
-            [id]
-        );
+        const isNumeric = /^\d+$/.test(id);
+        const { rows } = isNumeric
+            ? await pool.query('SELECT * FROM inspirations WHERE card_no = $1::integer', [parseInt(id, 10)])
+            : await pool.query('SELECT * FROM inspirations WHERE id = $1::uuid', [id]);
         if (rows.length === 0) {
             return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }

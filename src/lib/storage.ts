@@ -21,6 +21,7 @@ export type SourceOption = typeof SOURCE_OPTIONS[number];
 
 export interface Inspiration {
     id: string;
+    card_no: number;
     user_id: string;
     category: Category;
     subcategory: Subcategory | null;
@@ -63,6 +64,7 @@ export async function uploadAsset(assetContent: string | File): Promise<string> 
 function mapInspiration(item: any): Inspiration {
     return {
         id: item.id,
+        card_no: item.card_no,
         user_id: item.user_id,
         category: item.category || '政策',
         subcategory: item.subcategory || null,
@@ -101,7 +103,7 @@ export async function getInspirationById(id: string): Promise<Inspiration | null
     }
 }
 
-export async function saveInspiration(item: Omit<Inspiration, 'id' | 'createdAt' | 'user_id'>) {
+export async function saveInspiration(item: Omit<Inspiration, 'id' | 'card_no' | 'createdAt' | 'user_id'>) {
     const user = getCurrentUser();
     if (!user) throw new Error("User must be logged in to save.");
 

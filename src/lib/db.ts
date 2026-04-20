@@ -85,6 +85,25 @@ export async function initDatabase() {
         await client.query(`ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS source_text TEXT NOT NULL DEFAULT '';`);
         await client.query(`ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS design_insight TEXT NOT NULL DEFAULT '';`);
 
+        // Migration: card_no sequential identifier (for user-friendly URLs and display)
+        await client.query(`CREATE SEQUENCE IF NOT EXISTS inspirations_card_no_seq;`);
+        await client.query(`ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS card_no INTEGER;`);
+        await client.query(`
+            WITH ordered AS (
+                SELECT id, ROW_NUMBER() OVER (ORDER BY created_at) AS rn
+                FROM inspirations WHERE card_no IS NULL
+            )
+            UPDATE inspirations SET card_no = ordered.rn
+            FROM ordered WHERE inspirations.id = ordered.id;
+        `);
+        await client.query(`
+            SELECT setval('inspirations_card_no_seq',
+                          COALESCE((SELECT MAX(card_no) FROM inspirations), 0) + 1, false);
+        `);
+        await client.query(`ALTER TABLE inspirations ALTER COLUMN card_no SET DEFAULT nextval('inspirations_card_no_seq');`);
+        await client.query(`ALTER TABLE inspirations ALTER COLUMN card_no SET NOT NULL;`).catch(() => {});
+        await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS inspirations_card_no_key ON inspirations(card_no);`);
+
         console.log('Database initialized: inspirations table ready');
     } finally {
         client.release();

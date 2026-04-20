@@ -178,7 +178,7 @@ export default function ViewPage() {
                                 </span>
                                 <span className="text-slate-600">{getOwnerName(item.user_id)}</span>
                                 <span>·</span>
-                                <span className="bg-slate-100 px-2 py-1 rounded-md text-slate-500">#{item.id.substring(0, 6)}</span>
+                                <span className="bg-slate-100 px-2 py-1 rounded-md text-slate-500 font-mono">#{item.card_no}</span>
                                 <span>·</span>
                                 <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                             </div>

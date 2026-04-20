@@ -132,11 +132,13 @@ export default function DashboardPage() {
         }
         if (search) {
             const q = search.toLowerCase();
+            const qNum = search.trim().replace(/^#/, ''); // support "#1" input
             result = result.filter(i =>
                 i.title.toLowerCase().includes(q) ||
                 i.category?.toLowerCase().includes(q) ||
                 i.subcategory?.toLowerCase().includes(q) ||
-                i.tags?.some(t => t.toLowerCase().includes(q))
+                i.tags?.some(t => t.toLowerCase().includes(q)) ||
+                (/^\d+$/.test(qNum) && String(i.card_no) === qNum)
             );
         }
         setFiltered(result);
@@ -402,7 +404,7 @@ export default function DashboardPage() {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                             <input
                                 className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm placeholder:text-slate-400"
-                                placeholder="搜索灵感..."
+                                placeholder="搜索灵感或编号（如 #1）..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
@@ -688,7 +690,7 @@ export default function DashboardPage() {
                             <div className="flex items-center gap-2">
                                 {!isEditing && (
                                     <button
-                                        onClick={() => handleShare(selectedItem.id)}
+                                        onClick={() => handleShare(String(selectedItem.card_no))}
                                         className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-all flex items-center gap-1.5"
                                         title="复制分享链接"
                                     >
@@ -831,7 +833,7 @@ export default function DashboardPage() {
                                     </span>
                                     <span className="text-slate-600">{getOwnerName(selectedItem.user_id)}</span>
                                     <span>·</span>
-                                    <span className="bg-slate-100 px-2 py-1 rounded-md text-slate-500">#{selectedItem.id.substring(0, 6)}</span>
+                                    <span className="bg-slate-100 px-2 py-1 rounded-md text-slate-500 font-mono">#{selectedItem.card_no}</span>
                                     <span>·</span>
                                     <span>{new Date(selectedItem.createdAt).toLocaleDateString()}</span>
                                 </div>
