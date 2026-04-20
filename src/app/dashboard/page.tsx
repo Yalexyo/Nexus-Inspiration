@@ -971,7 +971,7 @@ export default function DashboardPage() {
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1 block mb-2">详细描述</label>
                                             <textarea
-                                                className="w-full min-h-[150px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
+                                                className="w-full min-h-[220px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-y leading-relaxed"
                                                 value={editForm.description}
                                                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                                             />

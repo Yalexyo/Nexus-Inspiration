@@ -412,7 +412,7 @@ export default function CapturePage() {
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold text-slate-400 tracking-widest pl-1">05 / 描述</label>
                             <textarea
-                                className="w-full min-h-[100px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none leading-relaxed"
+                                className="w-full min-h-[200px] p-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-y leading-relaxed"
                                 placeholder="描述你看到的内容..."
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
