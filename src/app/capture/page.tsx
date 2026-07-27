@@ -9,13 +9,13 @@ import {
     Trash2,
     Plus,
     Loader2,
-    Play,
     Globe,
     ExternalLink,
     FileText
 } from 'lucide-react';
 import { saveInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption } from '@/lib/storage';
 import { getCurrentUser } from '@/lib/auth';
+import VideoThumb from '@/components/VideoThumb';
 
 export default function CapturePage() {
     const router = useRouter();
@@ -162,7 +162,13 @@ export default function CapturePage() {
                             <div className="w-full h-full flex flex-col">
                                 <div className="flex-1 min-h-0 relative group rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-200">
                                     {assets[0].type === 'video' ? (
-                                        <video src={assets[0].preview} className="w-full h-full object-contain" controls />
+                                        <video
+                                            src={assets[0].preview ? `${assets[0].preview}#t=0.1` : undefined}
+                                            className="w-full h-full object-contain"
+                                            preload="metadata"
+                                            playsInline
+                                            controls
+                                        />
                                     ) : assets[0].type === 'pdf' ? (
                                         <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 gap-4">
                                             <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm">
@@ -242,9 +248,7 @@ export default function CapturePage() {
                             {assets.slice(1).map((ctx, idx) => (
                                 <div key={idx} className="shrink-0 w-20 h-20 bg-white rounded-xl border border-slate-200 overflow-hidden relative group shadow-sm">
                                     {ctx.type === 'video' ? (
-                                        <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                                            <Play size={16} className="text-white fill-white" />
-                                        </div>
+                                        <VideoThumb src={ctx.preview || (typeof ctx.content === 'string' ? ctx.content : '')} iconSize={14} />
                                     ) : ctx.type === 'pdf' ? (
                                         <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-500 gap-1 p-2 text-center">
                                             <FileText size={24} />

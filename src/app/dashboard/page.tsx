@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, getUsers } from '@/lib/auth';
 import { Button } from "@/components/ui/button";
+import VideoThumb from "@/components/VideoThumb";
 import {
     Plus,
     Search,
@@ -18,7 +19,6 @@ import {
     Calendar,
     Tag,
     Clock,
-    Play,
     Film,
     LogOut,
     Check,
@@ -229,9 +229,10 @@ export default function DashboardPage() {
     const renderAssetThumbnail = (asset: MediaAsset, className: string = "w-full h-full object-cover") => {
         if (asset.type === 'video') {
             return (
-                <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                    <Play size={16} className="text-white fill-white" />
-                </div>
+                <VideoThumb
+                    src={asset.preview || (typeof asset.content === 'string' ? asset.content : '')}
+                    iconSize={14}
+                />
             );
         } else if (asset.type === 'pdf') {
             return (
@@ -262,10 +263,14 @@ export default function DashboardPage() {
 
     const renderAssetPreview = (asset: MediaAsset) => {
         if (asset.type === 'video') {
+            const videoSrc = asset.preview || (typeof asset.content === 'string' ? asset.content as string : '');
             return (
                 <video
-                    src={asset.preview || (typeof asset.content === 'string' ? asset.content as string : '')}
+                    // 同封面逻辑：未播放时停在第一帧，而不是一片黑
+                    src={videoSrc.includes('#') ? videoSrc : `${videoSrc}#t=0.1`}
                     className="max-h-full max-w-full"
+                    preload="metadata"
+                    playsInline
                     controls
                 />
             );
@@ -615,9 +620,7 @@ export default function DashboardPage() {
                                             {item.assets && item.assets.length > 0 ? (
                                                 <>
                                                     {item.assets[0].type === 'video' ? (
-                                                        <div className="w-full h-full flex items-center justify-center bg-slate-900 group-hover:scale-105 transition-transform duration-500">
-                                                            <Play size={32} className="text-white fill-white opacity-80" />
-                                                        </div>
+                                                        <VideoThumb src={item.assets[0].content as string} iconSize={22} zoomOnHover />
                                                     ) : item.assets[0].type === 'pdf' ? (
                                                         <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-400 group-hover:bg-red-100 transition-colors">
                                                             <FileText size={48} />

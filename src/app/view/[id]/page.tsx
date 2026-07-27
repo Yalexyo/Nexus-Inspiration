@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { getInspirationById } from '@/lib/storage';
 import type { Inspiration, MediaAsset } from '@/lib/storage';
 import { getUsers } from '@/lib/auth';
-import { Loader2, FileText, Globe, Play, ExternalLink, ArrowLeft } from 'lucide-react';
+import { Loader2, FileText, Globe, ExternalLink, ArrowLeft } from 'lucide-react';
 import MushroomCardIcon from '@/components/MushroomCardIcon';
+import VideoThumb from '@/components/VideoThumb';
 
 const USER_COLORS: Record<string, string> = {
     'user_01': 'bg-blue-500',
@@ -27,7 +28,16 @@ function getOwnerName(userId: string): string {
 function renderAssetPreview(asset: MediaAsset) {
     const content = typeof asset.content === 'string' ? asset.content : '';
     if (asset.type === 'video') {
-        return <video src={content} className="w-full h-full object-contain" controls />;
+        // 未播放时停在第一帧，而不是一片黑
+        return (
+            <video
+                src={content.includes('#') ? content : `${content}#t=0.1`}
+                className="w-full h-full object-contain"
+                preload="metadata"
+                playsInline
+                controls
+            />
+        );
     }
     if (asset.type === 'pdf') {
         return (
@@ -60,11 +70,7 @@ function renderAssetPreview(asset: MediaAsset) {
 function renderAssetThumbnail(asset: MediaAsset) {
     const content = typeof asset.content === 'string' ? asset.content : '';
     if (asset.type === 'video') {
-        return (
-            <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                <Play size={16} className="text-white fill-white" />
-            </div>
-        );
+        return <VideoThumb src={content} iconSize={14} />;
     }
     if (asset.type === 'pdf') {
         return (
