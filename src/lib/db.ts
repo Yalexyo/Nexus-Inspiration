@@ -77,7 +77,7 @@ export async function initDatabase() {
         // Migration: existing records without a valid Chinese category → 创意/其他
         await client.query(`
             UPDATE inspirations SET category = '创意', subcategory = '其他'
-            WHERE category NOT IN ('政策', '经济', '社会', '技术', '创意');
+            WHERE category NOT IN ('政策', '经济', '社会', '技术', '创意', '竞品动态');
         `);
         // Migration: records already in 创意 but missing subcategory → 其他
         await client.query(`

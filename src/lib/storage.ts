@@ -8,7 +8,7 @@ export interface MediaAsset {
     preview?: string; // For UI display (blob URL)
 }
 
-export const CATEGORIES = ['政策', '经济', '社会', '技术', '创意'] as const;
+export const CATEGORIES = ['政策', '经济', '社会', '技术', '创意', '竞品动态'] as const;
 export type Category = typeof CATEGORIES[number];
 
 export const SUBCATEGORIES = ['产品', '品牌', '软件UI', '视频', '其他'] as const;
