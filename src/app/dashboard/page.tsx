@@ -181,18 +181,19 @@ export default function DashboardPage() {
 
     // 标后续动作：单选，点已选中的那个就是取消。乐观更新 + 失败回滚
     const handleSetFollowUp = async (value: FollowUp | null) => {
-        if (!selectedItem || !isOwner(selectedItem)) return;
+        if (!selectedItem || isViewOnly) return;   // 全员可标，只要求已登录
         const target = selectedItem.id;
         const prev = selectedItem.follow_up;
-        const apply = (v: FollowUp | null) => {
-            setSelectedItem(cur => (cur && cur.id === target ? { ...cur, follow_up: v } : cur));
-            setInspirations(list => list.map(i => (i.id === target ? { ...i, follow_up: v } : i)));
+        const prevBy = selectedItem.follow_up_by;
+        const apply = (v: FollowUp | null, by: string | null) => {
+            setSelectedItem(cur => (cur && cur.id === target ? { ...cur, follow_up: v, follow_up_by: by } : cur));
+            setInspirations(list => list.map(i => (i.id === target ? { ...i, follow_up: v, follow_up_by: by } : i)));
         };
-        apply(value);
+        apply(value, value ? currentUserId : null);
         try {
             await setFollowUp(target, value);
         } catch (e) {
-            apply(prev);
+            apply(prev, prevBy);
             alert('标记失败：' + (e instanceof Error ? e.message : '未知错误'));
         }
     };
@@ -785,13 +786,13 @@ export default function DashboardPage() {
                                     {FOLLOW_UPS.map(f => {
                                         const active = selectedItem.follow_up === f;
                                         const st = FOLLOW_UP_STYLE[f];
-                                        const editable = isOwner(selectedItem);
+                                        const editable = !isViewOnly;
                                         return (
                                             <button
                                                 key={f}
                                                 onClick={() => handleSetFollowUp(active ? null : f)}
                                                 disabled={!editable}
-                                                title={editable ? (active ? '再点一次取消' : '标记为' + f) : '只有上传人可以标记'}
+                                                title={editable ? (active ? '再点一次取消' : '标记为' + f) : '登录后即可标记'}
                                                 className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-bold transition-all ${
                                                     active
                                                         ? `${st.chip} ${st.text}`
@@ -804,8 +805,14 @@ export default function DashboardPage() {
                                         );
                                     })}
                                 </div>
-                                {!isOwner(selectedItem) && (
-                                    <p className="text-[11px] text-slate-400 mt-2">只有上传人（{getOwnerName(selectedItem.user_id)}）可以标记后续动作</p>
+                                {isViewOnly ? (
+                                    <p className="text-[11px] text-slate-400 mt-2">登录后任何人都可以标记后续动作</p>
+                                ) : selectedItem.follow_up && selectedItem.follow_up_by ? (
+                                    <p className="text-[11px] text-slate-400 mt-2">
+                                        由 <span className="font-bold text-slate-500">{getOwnerName(selectedItem.follow_up_by)}</span> 标记 · 任何人都可以改
+                                    </p>
+                                ) : (
+                                    <p className="text-[11px] text-slate-400 mt-2">任何人都可以标记，标完全员可见</p>
                                 )}
                             </div>
                         )}

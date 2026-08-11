@@ -92,6 +92,10 @@ export async function initDatabase() {
 
         // Migration: follow_up 后续动作标签（单选，可为空）
         await client.query(`ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS follow_up TEXT DEFAULT NULL;`);
+        // 谁标的。后续动作是全员可写，不记标记人就不知道该找谁
+        await client.query(`ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS follow_up_by TEXT DEFAULT NULL;`);
+        // 没有标签就不该留标记人
+        await client.query(`UPDATE inspirations SET follow_up_by = NULL WHERE follow_up IS NULL;`);
         // 清掉不在白名单里的历史值（改名或手工写入造成的）
         await client.query(`
             UPDATE inspirations SET follow_up = NULL

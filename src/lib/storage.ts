@@ -37,6 +37,7 @@ export interface Inspiration {
     assets: MediaAsset[];
     tags: string[];
     follow_up: FollowUp | null;
+    follow_up_by: string | null;   // 标记人的 user_id
     createdAt: string;
 }
 
@@ -81,6 +82,7 @@ function mapInspiration(item: any): Inspiration {
         assets: item.assets || [],
         tags: item.tags || [],
         follow_up: item.follow_up || null,
+        follow_up_by: item.follow_up_by || null,
         createdAt: item.created_at
     };
 }
@@ -109,12 +111,13 @@ export async function getInspirationById(id: string): Promise<Inspiration | null
     }
 }
 
-// 只改后续动作标签，不动其它字段。传 null 表示取消标记
+// 只改后续动作标签，不动其它字段。传 null 表示取消标记。
+// 走独立端点：这是唯一一个非上传人也能写的字段（全员协作的分拣动作）
 export async function setFollowUp(id: string, followUp: FollowUp | null) {
     const user = getCurrentUser();
-    if (!user) throw new Error("Unauthorized");
+    if (!user) throw new Error("请先登录再标记");
 
-    const res = await fetch(`/api/inspirations/${id}`, {
+    const res = await fetch(`/api/inspirations/${id}/follow-up`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id, follow_up: followUp })
@@ -126,7 +129,7 @@ export async function setFollowUp(id: string, followUp: FollowUp | null) {
 }
 
 // 新建时后续动作标签可以不填（新灵感默认没有标记，看过之后再标）
-export async function saveInspiration(item: Omit<Inspiration, 'id' | 'card_no' | 'createdAt' | 'user_id' | 'follow_up'> & { follow_up?: FollowUp | null }) {
+export async function saveInspiration(item: Omit<Inspiration, 'id' | 'card_no' | 'createdAt' | 'user_id' | 'follow_up' | 'follow_up_by'> & { follow_up?: FollowUp | null }) {
     const user = getCurrentUser();
     if (!user) throw new Error("User must be logged in to save.");
 
