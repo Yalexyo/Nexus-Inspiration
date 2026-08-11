@@ -24,9 +24,11 @@ import {
     Check,
     Globe,
     Link as LinkIcon,
-    FileText
+    FileText,
+    MessageSquare,
+    Send
 } from 'lucide-react';
-import { getInspirations, Inspiration, deleteInspiration, updateInspiration, setFollowUp, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption, FOLLOW_UPS, FollowUp } from '@/lib/storage';
+import { getInspirations, Inspiration, deleteInspiration, updateInspiration, setFollowUp, getComments, addComment, deleteComment, Comment, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption, FOLLOW_UPS, FollowUp } from '@/lib/storage';
 import MushroomCardIcon from '@/components/MushroomCardIcon';
 
 const USER_COLORS: Record<string, string> = {
@@ -38,22 +40,26 @@ const USER_COLORS: Record<string, string> = {
 };
 const getUserColor = (userId: string) => USER_COLORS[userId] || 'bg-slate-400';
 
-// 后续动作标签的配色。四个都是低饱和，避免和内容抢注意力
-const FOLLOW_UP_STYLE: Record<FollowUp, { dot: string; text: string; chip: string }> = {
-    '继续深入调查':     { dot: 'bg-sky-500',     text: 'text-sky-700',     chip: 'bg-sky-50 border-sky-200' },
-    '内容结构进一步优化': { dot: 'bg-amber-500',   text: 'text-amber-700',   chip: 'bg-amber-50 border-amber-200' },
-    '升级成分享内容':   { dot: 'bg-emerald-500', text: 'text-emerald-700', chip: 'bg-emerald-50 border-emerald-200' },
-    '考虑项目应用':     { dot: 'bg-violet-500',  text: 'text-violet-700',  chip: 'bg-violet-50 border-violet-200' },
+// 后续动作标签的配色。四个底色都验过白字对比度（WCAG AA 要求小号正文 ≥ 4.5:1）：
+//   #0369a1 蓝 5.93:1 · #b45309 橙 5.02:1 · #047857 绿 5.48:1 · #7c3aed 紫 5.70:1
+// 直接写十六进制而不用 Tailwind 色名：v4 调色板是 OKLCH 换算的，色名对应的实际值可能变，
+// 那样算出来的对比度就不作数了。改色务必重算对比度。
+const FOLLOW_UP_STYLE: Record<FollowUp, { bg: string }> = {
+    '继续深入调查':     { bg: '#0369a1' },
+    '内容结构进一步优化': { bg: '#b45309' },
+    '升级成分享内容':   { bg: '#047857' },
+    '考虑项目应用':     { bg: '#7c3aed' },
 };
 
-// 卡片左上角的角标。白底保证压在任何封面图上都读得清
+// 卡片左上角的角标：实色底 + 白字。压在封面图上时靠一圈白描边和投影跟背景分开
 function FollowUpBadge({ value, size = 'md' }: { value: FollowUp | null; size?: 'sm' | 'md' }) {
     if (!value) return null;
-    const st = FOLLOW_UP_STYLE[value];
     const sm = size === 'sm';
     return (
-        <span className={`inline-flex items-center gap-1.5 rounded-md bg-white/95 backdrop-blur-sm border border-slate-200/80 shadow-sm font-bold ${st.text} ${sm ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-[11px]'}`}>
-            <span className={`rounded-full shrink-0 ${st.dot} ${sm ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} />
+        <span
+            className={`inline-flex items-center rounded-md font-bold text-white shadow-sm ring-1 ring-white/70 whitespace-nowrap ${sm ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-[11px]'}`}
+            style={{ backgroundColor: FOLLOW_UP_STYLE[value].bg }}
+        >
             {value}
         </span>
     );
@@ -84,6 +90,11 @@ export default function DashboardPage() {
     const [timeFilter, setTimeFilter] = useState<string>('all');
     const [isViewOnly, setIsViewOnly] = useState(false);
     const [copiedShare, setCopiedShare] = useState(false);
+    // 评论：跟着详情面板走，打开哪条就拉哪条的
+    const [comments, setComments] = useState<Comment[]>([]);
+    const [commentsLoading, setCommentsLoading] = useState(false);
+    const [commentDraft, setCommentDraft] = useState('');
+    const [postingComment, setPostingComment] = useState(false);
 
     const getOwnerName = (userId: string) => {
         const users = getUsers();
@@ -111,6 +122,55 @@ export default function DashboardPage() {
         };
         load();
     }, [router]);
+
+    // 详情面板打开/切换时拉评论
+    useEffect(() => {
+        if (!selectedItem) { setComments([]); setCommentDraft(''); return; }
+        let cancelled = false;
+        setCommentsLoading(true);
+        getComments(selectedItem.id).then(list => {
+            if (!cancelled) { setComments(list); setCommentsLoading(false); }
+        });
+        return () => { cancelled = true; };
+    }, [selectedItem?.id]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 发表评论后同步更新卡片上的计数，不用整表重拉
+    const syncCounts = (list: Comment[]) => {
+        if (!selectedItem) return;
+        const cnt = list.length;
+        const people = new Set(list.map(c => c.user_id)).size;
+        setInspirations(all => all.map(i =>
+            i.id === selectedItem.id ? { ...i, comment_count: cnt, commenter_count: people } : i));
+        setSelectedItem(cur => cur ? { ...cur, comment_count: cnt, commenter_count: people } : cur);
+    };
+
+    const handleAddComment = async () => {
+        const text = commentDraft.trim();
+        if (!selectedItem || !text || postingComment || isViewOnly) return;
+        setPostingComment(true);
+        try {
+            const created = await addComment(selectedItem.id, text);
+            const next = [...comments, created];
+            setComments(next); syncCounts(next); setCommentDraft('');
+        } catch (e) {
+            alert(e instanceof Error ? e.message : '评论失败');
+        } finally {
+            setPostingComment(false);
+        }
+    };
+
+    const handleDeleteComment = async (commentId: string) => {
+        if (!selectedItem || !confirm('删除这条评论？')) return;
+        const next = comments.filter(c => c.id !== commentId);
+        const prev = comments;
+        setComments(next); syncCounts(next);
+        try {
+            await deleteComment(selectedItem.id, commentId);
+        } catch (e) {
+            setComments(prev); syncCounts(prev);
+            alert(e instanceof Error ? e.message : '删除失败');
+        }
+    };
 
     const handleShare = (id: string) => {
         const url = `${window.location.origin}/view/${id}`;
@@ -607,7 +667,9 @@ export default function DashboardPage() {
                                     >
                                         <div className="w-16 h-16 shrink-0 bg-slate-100 rounded-lg overflow-hidden relative border border-slate-100 shadow-sm">
                                             {item.follow_up && (
-                                                <span className={`absolute top-1 left-1 z-10 w-2.5 h-2.5 rounded-full ring-2 ring-white ${FOLLOW_UP_STYLE[item.follow_up].dot}`} title={item.follow_up} />
+                                                <span className="absolute top-1 left-1 z-10 w-2.5 h-2.5 rounded-full ring-2 ring-white"
+                                                      style={{ backgroundColor: FOLLOW_UP_STYLE[item.follow_up].bg }}
+                                                      title={item.follow_up} />
                                             )}
                                             {item.assets && item.assets.length > 0 ? (
                                                 renderAssetThumbnail(item.assets[0])
@@ -628,6 +690,16 @@ export default function DashboardPage() {
                                                 <span className="font-bold text-slate-600">{getOwnerName(item.user_id)}</span>
                                                 <span className="text-slate-300">·</span>
                                                 <span className="text-slate-400">{new Date(item.createdAt).toLocaleDateString()}</span>
+                                                {item.commenter_count > 0 && (
+                                                    <>
+                                                        <span className="text-slate-300">·</span>
+                                                        <span className="inline-flex items-center gap-1 text-slate-500 font-medium"
+                                                              title={`${item.commenter_count} 人评论，共 ${item.comment_count} 条`}>
+                                                            <MessageSquare size={12} />
+                                                            {item.commenter_count}
+                                                        </span>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="hidden md:flex gap-2 items-center">
@@ -708,6 +780,16 @@ export default function DashboardPage() {
                                                     <span className="font-medium text-slate-600">{getOwnerName(item.user_id)}</span>
                                                     <span className="text-slate-300">·</span>
                                                     <span className="text-slate-400">{new Date(item.createdAt).toLocaleDateString()}</span>
+                                                    {item.commenter_count > 0 && (
+                                                        <>
+                                                            <span className="text-slate-300">·</span>
+                                                            <span className="inline-flex items-center gap-1 text-slate-500 font-medium"
+                                                                  title={`${item.commenter_count} 人评论，共 ${item.comment_count} 条`}>
+                                                                <MessageSquare size={12} />
+                                                                {item.commenter_count}
+                                                            </span>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex flex-wrap gap-1.5 mt-auto pt-2">
@@ -785,7 +867,7 @@ export default function DashboardPage() {
                                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] mr-1">后续动作</span>
                                     {FOLLOW_UPS.map(f => {
                                         const active = selectedItem.follow_up === f;
-                                        const st = FOLLOW_UP_STYLE[f];
+                                        const bg = FOLLOW_UP_STYLE[f].bg;
                                         const editable = !isViewOnly;
                                         return (
                                             <button
@@ -795,11 +877,12 @@ export default function DashboardPage() {
                                                 title={editable ? (active ? '再点一次取消' : '标记为' + f) : '登录后即可标记'}
                                                 className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-bold transition-all ${
                                                     active
-                                                        ? `${st.chip} ${st.text}`
-                                                        : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                                                        ? 'text-white border-transparent shadow-sm'
+                                                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
                                                 } ${editable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                                                style={active ? { backgroundColor: bg } : undefined}
                                             >
-                                                <span className={`w-2 h-2 rounded-full shrink-0 ${active ? st.dot : 'bg-slate-300'}`} />
+                                                {!active && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: bg }} />}
                                                 {f}
                                             </button>
                                         );
@@ -1145,6 +1228,88 @@ export default function DashboardPage() {
                                                     </p>
                                                 </div>
                                             )}
+
+                                            {/* 评论区：任何登录用户都能评 */}
+                                            <div className="mt-10 pt-8 border-t border-slate-100">
+                                                <h3 className="text-xs font-bold text-slate-400 tracking-widest mb-4 flex items-center gap-2">
+                                                    <MessageSquare size={14} />
+                                                    评论
+                                                    {comments.length > 0 && (
+                                                        <span className="font-medium text-slate-400 tracking-normal">
+                                                            {new Set(comments.map(c => c.user_id)).size} 人 · {comments.length} 条
+                                                        </span>
+                                                    )}
+                                                </h3>
+
+                                                {commentsLoading ? (
+                                                    <p className="text-sm text-slate-400">加载中…</p>
+                                                ) : comments.length === 0 ? (
+                                                    <p className="text-sm text-slate-400 mb-5">还没有人评论，来说第一句</p>
+                                                ) : (
+                                                    <div className="space-y-4 mb-6">
+                                                        {comments.map(c => (
+                                                            <div key={c.id} className="flex gap-3 group/c">
+                                                                <span className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-white text-[11px] font-bold ${getUserColor(c.user_id)}`}>
+                                                                    {getOwnerName(c.user_id).charAt(0)}
+                                                                </span>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-2 text-[11px]">
+                                                                        <span className="font-bold text-slate-700">{getOwnerName(c.user_id)}</span>
+                                                                        <span className="text-slate-400">
+                                                                            {new Date(c.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                        </span>
+                                                                        {c.user_id === currentUserId && (
+                                                                            <button
+                                                                                onClick={() => handleDeleteComment(c.id)}
+                                                                                className="ml-auto text-slate-300 hover:text-red-500 opacity-0 group-hover/c:opacity-100 transition-opacity"
+                                                                                title="删除我的评论"
+                                                                            >
+                                                                                <Trash2 size={13} />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="text-[15px] text-slate-700 leading-relaxed whitespace-pre-wrap mt-1 break-words">
+                                                                        {c.body}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {isViewOnly ? (
+                                                    <p className="text-sm text-slate-400 bg-slate-50 rounded-xl px-4 py-3">登录后即可评论</p>
+                                                ) : (
+                                                    <div className="flex gap-3 items-start">
+                                                        <span className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-white text-[11px] font-bold ${getUserColor(currentUserId)}`}>
+                                                            {getOwnerName(currentUserId).charAt(0)}
+                                                        </span>
+                                                        <div className="flex-1">
+                                                            <textarea
+                                                                value={commentDraft}
+                                                                onChange={e => setCommentDraft(e.target.value)}
+                                                                onKeyDown={e => {
+                                                                    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleAddComment();
+                                                                }}
+                                                                rows={3}
+                                                                maxLength={2000}
+                                                                placeholder="说点什么…（⌘/Ctrl + Enter 发送）"
+                                                                className="w-full text-[15px] border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 resize-y"
+                                                            />
+                                                            <div className="flex items-center justify-between mt-2">
+                                                                <span className="text-[11px] text-slate-400">{commentDraft.length}/2000</span>
+                                                                <button
+                                                                    onClick={handleAddComment}
+                                                                    disabled={!commentDraft.trim() || postingComment}
+                                                                    className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold flex items-center gap-1.5 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                                                >
+                                                                    <Send size={14} /> {postingComment ? '发送中…' : '发表'}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </>
                                 )}

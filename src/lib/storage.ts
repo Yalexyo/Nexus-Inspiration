@@ -23,6 +23,14 @@ export type SourceOption = typeof SOURCE_OPTIONS[number];
 export const FOLLOW_UPS = ['继续深入调查', '内容结构进一步优化', '升级成分享内容', '考虑项目应用'] as const;
 export type FollowUp = typeof FOLLOW_UPS[number];
 
+export interface Comment {
+    id: string;
+    inspiration_id: string;
+    user_id: string;
+    body: string;
+    created_at: string;
+}
+
 export interface Inspiration {
     id: string;
     card_no: number;
@@ -38,6 +46,8 @@ export interface Inspiration {
     tags: string[];
     follow_up: FollowUp | null;
     follow_up_by: string | null;   // 标记人的 user_id
+    comment_count: number;         // 评论条数
+    commenter_count: number;       // 评论人数（去重）
     createdAt: string;
 }
 
@@ -83,6 +93,8 @@ function mapInspiration(item: any): Inspiration {
         tags: item.tags || [],
         follow_up: item.follow_up || null,
         follow_up_by: item.follow_up_by || null,
+        comment_count: Number(item.comment_count) || 0,
+        commenter_count: Number(item.commenter_count) || 0,
         createdAt: item.created_at
     };
 }
@@ -128,8 +140,52 @@ export async function setFollowUp(id: string, followUp: FollowUp | null) {
     }
 }
 
+// ---- 评论 ----
+
+export async function getComments(inspirationId: string): Promise<Comment[]> {
+    try {
+        const res = await fetch(`/api/inspirations/${inspirationId}/comments`);
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (error) {
+        console.error('Fetch comments error:', error);
+        return [];
+    }
+}
+
+// 任何已登录用户都能评论，不限于上传人
+export async function addComment(inspirationId: string, body: string): Promise<Comment> {
+    const user = getCurrentUser();
+    if (!user) throw new Error("请先登录再评论");
+
+    const res = await fetch(`/api/inspirations/${inspirationId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, body })
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || '评论失败');
+    }
+    return await res.json();
+}
+
+// 只能删自己发的
+export async function deleteComment(inspirationId: string, commentId: string) {
+    const user = getCurrentUser();
+    if (!user) throw new Error("Unauthorized");
+    const res = await fetch(
+        `/api/inspirations/${inspirationId}/comments/${commentId}?user_id=${encodeURIComponent(user.id)}`,
+        { method: 'DELETE' }
+    );
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || '删除失败');
+    }
+}
+
 // 新建时后续动作标签可以不填（新灵感默认没有标记，看过之后再标）
-export async function saveInspiration(item: Omit<Inspiration, 'id' | 'card_no' | 'createdAt' | 'user_id' | 'follow_up' | 'follow_up_by'> & { follow_up?: FollowUp | null }) {
+export async function saveInspiration(item: Omit<Inspiration, 'id' | 'card_no' | 'createdAt' | 'user_id' | 'follow_up' | 'follow_up_by' | 'comment_count' | 'commenter_count'> & { follow_up?: FollowUp | null }) {
     const user = getCurrentUser();
     if (!user) throw new Error("User must be logged in to save.");
 

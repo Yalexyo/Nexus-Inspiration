@@ -122,6 +122,21 @@ export async function initDatabase() {
         await client.query(`ALTER TABLE inspirations ALTER COLUMN card_no SET NOT NULL;`).catch(() => {});
         await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS inspirations_card_no_key ON inspirations(card_no);`);
 
+        // 评论表。任何登录用户都能评，删卡片时级联删掉评论
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS inspiration_comments (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                inspiration_id UUID NOT NULL REFERENCES inspirations(id) ON DELETE CASCADE,
+                user_id TEXT NOT NULL,
+                body TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+        `);
+        await client.query(`
+            CREATE INDEX IF NOT EXISTS inspiration_comments_inspiration_id_idx
+            ON inspiration_comments(inspiration_id);
+        `);
+
         console.log('Database initialized: inspirations table ready');
     } finally {
         client.release();

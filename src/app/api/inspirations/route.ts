@@ -17,9 +17,20 @@ async function ensureDb() {
 export async function GET() {
     try {
         await ensureDb();
-        const { rows } = await pool.query(
-            'SELECT * FROM inspirations ORDER BY created_at DESC'
-        );
+        // 一次带出评论数和"评论人数"（去重后的人头），避免列表页 N+1
+        const { rows } = await pool.query(`
+            SELECT i.*,
+                   COALESCE(c.cnt, 0)::int    AS comment_count,
+                   COALESCE(c.people, 0)::int AS commenter_count
+            FROM inspirations i
+            LEFT JOIN (
+                SELECT inspiration_id,
+                       COUNT(*) AS cnt,
+                       COUNT(DISTINCT user_id) AS people
+                FROM inspiration_comments GROUP BY inspiration_id
+            ) c ON c.inspiration_id = i.id
+            ORDER BY i.created_at DESC
+        `);
         return NextResponse.json(rows);
     } catch (error) {
         console.error('GET /api/inspirations error:', error);
