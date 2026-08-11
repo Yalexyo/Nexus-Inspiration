@@ -95,6 +95,8 @@ export default function DashboardPage() {
     const [commentsLoading, setCommentsLoading] = useState(false);
     const [commentDraft, setCommentDraft] = useState('');
     const [postingComment, setPostingComment] = useState(false);
+    // 编辑态里拖拽排序附件用。第一个 = 头图
+    const [dragIdx, setDragIdx] = useState<number | null>(null);
 
     const getOwnerName = (userId: string) => {
         const users = getUsers();
@@ -142,6 +144,17 @@ export default function DashboardPage() {
         setInspirations(all => all.map(i =>
             i.id === selectedItem.id ? { ...i, comment_count: cnt, commenter_count: people } : i));
         setSelectedItem(cur => cur ? { ...cur, comment_count: cnt, commenter_count: people } : cur);
+    };
+
+    // 把第 from 个附件挪到第 to 个位置。数组第一个就是卡片头图
+    const moveAsset = (from: number, to: number) => {
+        if (!editForm || from === to || to < 0 || to >= editForm.assets.length) return;
+        const next = [...editForm.assets];
+        const [moved] = next.splice(from, 1);
+        next.splice(to, 0, moved);
+        setEditForm({ ...editForm, assets: next });
+        // 让预览跟着被移动的那张走，不然选中框会跳到别的图上
+        setActiveAssetIndex(to);
     };
 
     const handleAddComment = async () => {
@@ -951,10 +964,46 @@ export default function DashboardPage() {
                                         {editForm.assets.map((asset, idx) => (
                                             <div
                                                 key={idx}
+                                                draggable
+                                                onDragStart={() => setDragIdx(idx)}
+                                                onDragEnd={() => setDragIdx(null)}
+                                                onDragOver={(e) => e.preventDefault()}
+                                                onDrop={(e) => {
+                                                    e.preventDefault();
+                                                    if (dragIdx !== null) moveAsset(dragIdx, idx);
+                                                    setDragIdx(null);
+                                                }}
                                                 onClick={() => setActiveAssetIndex(idx)}
-                                                className={`shrink-0 w-24 h-24 rounded-lg overflow-hidden border shadow-sm relative group cursor-pointer transition-all ${activeAssetIndex === idx ? 'border-2 border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-300'}`}
+                                                title={idx === 0 ? '这张是卡片头图' : '拖动可调整顺序'}
+                                                className={`shrink-0 w-24 h-24 rounded-lg overflow-hidden border shadow-sm relative group cursor-grab active:cursor-grabbing transition-all ${
+                                                    dragIdx === idx ? 'opacity-40 scale-95' : ''
+                                                } ${
+                                                    idx === 0
+                                                        ? 'border-2 border-amber-400 ring-2 ring-amber-100'
+                                                        : activeAssetIndex === idx
+                                                            ? 'border-2 border-indigo-600 ring-2 ring-indigo-100'
+                                                            : 'border-slate-200 hover:border-indigo-300'
+                                                }`}
                                             >
                                                 {renderAssetThumbnail(asset)}
+
+                                                {idx === 0 && (
+                                                    <span className="absolute bottom-0 inset-x-0 bg-amber-400 text-[9px] font-black text-amber-950 text-center py-0.5 pointer-events-none">
+                                                        头图
+                                                    </span>
+                                                )}
+
+                                                {/* 一键置顶：拖拽之外给个更快的路径 */}
+                                                {idx !== 0 && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); moveAsset(idx, 0); }}
+                                                        className="absolute bottom-0 inset-x-0 bg-slate-900/80 text-white text-[9px] font-bold py-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        title="设为头图"
+                                                    >
+                                                        设为头图
+                                                    </button>
+                                                )}
+
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -974,6 +1023,11 @@ export default function DashboardPage() {
                                             </div>
                                         ))}
                                     </div>
+                                    {editForm.assets.length > 1 && (
+                                        <p className="px-4 pb-3 -mt-1 text-[11px] text-slate-400">
+                                            拖动缩略图可调整顺序，<span className="font-bold text-amber-600">排第一的那张就是卡片头图</span>；hover 缩略图可一键「设为头图」
+                                        </p>
+                                    )}
                                 </div>
                             ) : (
                                 /* Standard View Mode */
