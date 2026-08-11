@@ -90,6 +90,15 @@ export async function initDatabase() {
         await client.query(`ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS source_text TEXT NOT NULL DEFAULT '';`);
         await client.query(`ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS design_insight TEXT NOT NULL DEFAULT '';`);
 
+        // Migration: follow_up 后续动作标签（单选，可为空）
+        await client.query(`ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS follow_up TEXT DEFAULT NULL;`);
+        // 清掉不在白名单里的历史值（改名或手工写入造成的）
+        await client.query(`
+            UPDATE inspirations SET follow_up = NULL
+            WHERE follow_up IS NOT NULL
+              AND follow_up NOT IN ('继续深入调查', '内容结构进一步优化', '升级成分享内容', '考虑项目应用');
+        `);
+
         // Migration: card_no sequential identifier (for user-friendly URLs and display)
         await client.query(`CREATE SEQUENCE IF NOT EXISTS inspirations_card_no_seq;`);
         await client.query(`ALTER TABLE inspirations ADD COLUMN IF NOT EXISTS card_no INTEGER;`);

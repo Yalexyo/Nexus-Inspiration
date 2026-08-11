@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool, { initDatabase } from '@/lib/db';
 
+// 与 src/lib/storage.ts 的 FOLLOW_UPS 保持一致（改这里必须同步改那边）
+const FOLLOW_UPS = ['继续深入调查', '内容结构进一步优化', '升级成分享内容', '考虑项目应用'];
+
 let dbInitialized = false;
 
 async function ensureDb() {
@@ -29,7 +32,7 @@ export async function POST(req: NextRequest) {
     try {
         await ensureDb();
         const body = await req.json();
-        const { user_id, category, subcategory, title, description, source, source_text, design_insight, assets, tags } = body;
+        const { user_id, category, subcategory, title, description, source, source_text, design_insight, assets, tags, follow_up } = body;
 
         if (!user_id || !title) {
             return NextResponse.json({ error: 'user_id and title are required' }, { status: 400 });
@@ -40,8 +43,8 @@ export async function POST(req: NextRequest) {
         const finalSubcategory = finalCategory === '创意' ? (subcategory || null) : null;
 
         const { rows } = await pool.query(
-            `INSERT INTO inspirations (user_id, category, subcategory, title, description, source, source_text, design_insight, assets, tags)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            `INSERT INTO inspirations (user_id, category, subcategory, title, description, source, source_text, design_insight, assets, tags, follow_up)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
              RETURNING *`,
             [
                 user_id,
@@ -54,6 +57,7 @@ export async function POST(req: NextRequest) {
                 design_insight || '',
                 JSON.stringify(assets || []),
                 JSON.stringify(tags || []),
+                FOLLOW_UPS.includes(follow_up) ? follow_up : null,
             ]
         );
 

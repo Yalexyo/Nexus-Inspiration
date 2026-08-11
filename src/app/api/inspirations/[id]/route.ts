@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+// 与 src/lib/storage.ts 的 FOLLOW_UPS 保持一致（改这里必须同步改那边）
+const FOLLOW_UPS = ['继续深入调查', '内容结构进一步优化', '升级成分享内容', '考虑项目应用'];
+
 // GET single inspiration by uuid or card_no (public, no auth)
 export async function GET(
     _req: NextRequest,
@@ -30,7 +33,7 @@ export async function PUT(
     try {
         const { id } = await params;
         const body = await req.json();
-        const { user_id, title, description, tags, assets, category, subcategory, source, source_text, design_insight } = body;
+        const { user_id, title, description, tags, assets, category, subcategory, source, source_text, design_insight, follow_up } = body;
 
         if (!user_id) {
             return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
@@ -56,6 +59,11 @@ export async function PUT(
         if (design_insight !== undefined) { fields.push(`design_insight = $${idx++}`); values.push(design_insight); }
         if (tags !== undefined) { fields.push(`tags = $${idx++}`); values.push(JSON.stringify(tags)); }
         if (assets !== undefined) { fields.push(`assets = $${idx++}`); values.push(JSON.stringify(assets)); }
+        // follow_up 单选：只接受白名单里的值，其余一律存 null（= 取消标记）
+        if (follow_up !== undefined) {
+            fields.push(`follow_up = $${idx++}`);
+            values.push(FOLLOW_UPS.includes(follow_up) ? follow_up : null);
+        }
 
         if (fields.length === 0) {
             return NextResponse.json({ error: 'No fields to update' }, { status: 400 });

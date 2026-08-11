@@ -26,7 +26,7 @@ import {
     Link as LinkIcon,
     FileText
 } from 'lucide-react';
-import { getInspirations, Inspiration, deleteInspiration, updateInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption } from '@/lib/storage';
+import { getInspirations, Inspiration, deleteInspiration, updateInspiration, setFollowUp, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption, FOLLOW_UPS, FollowUp } from '@/lib/storage';
 import MushroomCardIcon from '@/components/MushroomCardIcon';
 
 const USER_COLORS: Record<string, string> = {
@@ -37,6 +37,27 @@ const USER_COLORS: Record<string, string> = {
     'user_05': 'bg-purple-500',
 };
 const getUserColor = (userId: string) => USER_COLORS[userId] || 'bg-slate-400';
+
+// 后续动作标签的配色。四个都是低饱和，避免和内容抢注意力
+const FOLLOW_UP_STYLE: Record<FollowUp, { dot: string; text: string; chip: string }> = {
+    '继续深入调查':     { dot: 'bg-sky-500',     text: 'text-sky-700',     chip: 'bg-sky-50 border-sky-200' },
+    '内容结构进一步优化': { dot: 'bg-amber-500',   text: 'text-amber-700',   chip: 'bg-amber-50 border-amber-200' },
+    '升级成分享内容':   { dot: 'bg-emerald-500', text: 'text-emerald-700', chip: 'bg-emerald-50 border-emerald-200' },
+    '考虑项目应用':     { dot: 'bg-violet-500',  text: 'text-violet-700',  chip: 'bg-violet-50 border-violet-200' },
+};
+
+// 卡片左上角的角标。白底保证压在任何封面图上都读得清
+function FollowUpBadge({ value, size = 'md' }: { value: FollowUp | null; size?: 'sm' | 'md' }) {
+    if (!value) return null;
+    const st = FOLLOW_UP_STYLE[value];
+    const sm = size === 'sm';
+    return (
+        <span className={`inline-flex items-center gap-1.5 rounded-md bg-white/95 backdrop-blur-sm border border-slate-200/80 shadow-sm font-bold ${st.text} ${sm ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-[11px]'}`}>
+            <span className={`rounded-full shrink-0 ${st.dot} ${sm ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} />
+            {value}
+        </span>
+    );
+}
 
 const TIME_FILTERS = [
     { value: 'all', label: '全部' },
@@ -155,6 +176,24 @@ export default function DashboardPage() {
                 console.error(e);
                 alert("Failed to delete inspiration: " + (e instanceof Error ? e.message : 'Unknown error'));
             }
+        }
+    };
+
+    // 标后续动作：单选，点已选中的那个就是取消。乐观更新 + 失败回滚
+    const handleSetFollowUp = async (value: FollowUp | null) => {
+        if (!selectedItem || !isOwner(selectedItem)) return;
+        const target = selectedItem.id;
+        const prev = selectedItem.follow_up;
+        const apply = (v: FollowUp | null) => {
+            setSelectedItem(cur => (cur && cur.id === target ? { ...cur, follow_up: v } : cur));
+            setInspirations(list => list.map(i => (i.id === target ? { ...i, follow_up: v } : i)));
+        };
+        apply(value);
+        try {
+            await setFollowUp(target, value);
+        } catch (e) {
+            apply(prev);
+            alert('标记失败：' + (e instanceof Error ? e.message : '未知错误'));
         }
     };
 
@@ -566,6 +605,9 @@ export default function DashboardPage() {
                                         className="group bg-white border border-slate-200 rounded-xl p-3 flex gap-4 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer items-center"
                                     >
                                         <div className="w-16 h-16 shrink-0 bg-slate-100 rounded-lg overflow-hidden relative border border-slate-100 shadow-sm">
+                                            {item.follow_up && (
+                                                <span className={`absolute top-1 left-1 z-10 w-2.5 h-2.5 rounded-full ring-2 ring-white ${FOLLOW_UP_STYLE[item.follow_up].dot}`} title={item.follow_up} />
+                                            )}
                                             {item.assets && item.assets.length > 0 ? (
                                                 renderAssetThumbnail(item.assets[0])
                                             ) : (
@@ -575,7 +617,10 @@ export default function DashboardPage() {
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">{item.title}</h3>
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <h3 className="font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">{item.title}</h3>
+                                                {item.follow_up && <span className="shrink-0"><FollowUpBadge value={item.follow_up} size="sm" /></span>}
+                                            </div>
                                             <p className="text-sm text-slate-500 truncate">{item.description}</p>
                                             <div className="flex items-center gap-1.5 mt-1 text-[11px]">
                                                 <span className={`w-2 h-2 rounded-full shrink-0 ${getUserColor(item.user_id)}`} />
@@ -617,6 +662,11 @@ export default function DashboardPage() {
                                         className="group bg-white rounded-2xl border border-slate-200 overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-indigo-200 transition-all duration-300 flex flex-col"
                                     >
                                         <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden">
+                                            {item.follow_up && (
+                                                <div className="absolute top-2 left-2 z-10 pointer-events-none">
+                                                    <FollowUpBadge value={item.follow_up} />
+                                                </div>
+                                            )}
                                             {item.assets && item.assets.length > 0 ? (
                                                 <>
                                                     {item.assets[0].type === 'video' ? (
@@ -726,6 +776,39 @@ export default function DashboardPage() {
                                 </button>
                             </div>
                         </header>
+
+                        {/* 后续动作：看完这条打算怎么处理。单选，再点一次取消 */}
+                        {!isEditing && (
+                            <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/70">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] mr-1">后续动作</span>
+                                    {FOLLOW_UPS.map(f => {
+                                        const active = selectedItem.follow_up === f;
+                                        const st = FOLLOW_UP_STYLE[f];
+                                        const editable = isOwner(selectedItem);
+                                        return (
+                                            <button
+                                                key={f}
+                                                onClick={() => handleSetFollowUp(active ? null : f)}
+                                                disabled={!editable}
+                                                title={editable ? (active ? '再点一次取消' : '标记为' + f) : '只有上传人可以标记'}
+                                                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-bold transition-all ${
+                                                    active
+                                                        ? `${st.chip} ${st.text}`
+                                                        : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                                                } ${editable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                                            >
+                                                <span className={`w-2 h-2 rounded-full shrink-0 ${active ? st.dot : 'bg-slate-300'}`} />
+                                                {f}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                {!isOwner(selectedItem) && (
+                                    <p className="text-[11px] text-slate-400 mt-2">只有上传人（{getOwnerName(selectedItem.user_id)}）可以标记后续动作</p>
+                                )}
+                            </div>
+                        )}
 
                         <div className="flex-1 overflow-y-auto">
                             {/* Media Section: Editable vs View */}

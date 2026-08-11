@@ -19,6 +19,10 @@ export const DESIGN_CATEGORY = '创意' as const;
 export const SOURCE_OPTIONS = ['网络', '展会', '交流会', '客户现场', '其他'] as const;
 export type SourceOption = typeof SOURCE_OPTIONS[number];
 
+// 后续动作标签：单选，可为空。看完一条灵感后标一下"这条接下来该干嘛"
+export const FOLLOW_UPS = ['继续深入调查', '内容结构进一步优化', '升级成分享内容', '考虑项目应用'] as const;
+export type FollowUp = typeof FOLLOW_UPS[number];
+
 export interface Inspiration {
     id: string;
     card_no: number;
@@ -32,6 +36,7 @@ export interface Inspiration {
     design_insight: string;
     assets: MediaAsset[];
     tags: string[];
+    follow_up: FollowUp | null;
     createdAt: string;
 }
 
@@ -75,6 +80,7 @@ function mapInspiration(item: any): Inspiration {
         design_insight: item.design_insight || '',
         assets: item.assets || [],
         tags: item.tags || [],
+        follow_up: item.follow_up || null,
         createdAt: item.created_at
     };
 }
@@ -103,7 +109,24 @@ export async function getInspirationById(id: string): Promise<Inspiration | null
     }
 }
 
-export async function saveInspiration(item: Omit<Inspiration, 'id' | 'card_no' | 'createdAt' | 'user_id'>) {
+// 只改后续动作标签，不动其它字段。传 null 表示取消标记
+export async function setFollowUp(id: string, followUp: FollowUp | null) {
+    const user = getCurrentUser();
+    if (!user) throw new Error("Unauthorized");
+
+    const res = await fetch(`/api/inspirations/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, follow_up: followUp })
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to update follow-up');
+    }
+}
+
+// 新建时后续动作标签可以不填（新灵感默认没有标记，看过之后再标）
+export async function saveInspiration(item: Omit<Inspiration, 'id' | 'card_no' | 'createdAt' | 'user_id' | 'follow_up'> & { follow_up?: FollowUp | null }) {
     const user = getCurrentUser();
     if (!user) throw new Error("User must be logged in to save.");
 
@@ -130,7 +153,8 @@ export async function saveInspiration(item: Omit<Inspiration, 'id' | 'card_no' |
                 source_text: item.source_text,
                 design_insight: item.design_insight,
                 assets: processedAssets,
-                tags: item.tags
+                tags: item.tags,
+                follow_up: item.follow_up ?? null
             })
         });
 
@@ -145,7 +169,7 @@ export async function saveInspiration(item: Omit<Inspiration, 'id' | 'card_no' |
     }
 }
 
-export async function updateInspiration(id: string, updates: Partial<Pick<Inspiration, 'title' | 'description' | 'tags' | 'assets' | 'category' | 'subcategory' | 'source' | 'source_text' | 'design_insight'>>) {
+export async function updateInspiration(id: string, updates: Partial<Pick<Inspiration, 'title' | 'description' | 'tags' | 'assets' | 'category' | 'subcategory' | 'source' | 'source_text' | 'design_insight' | 'follow_up'>>) {
     const user = getCurrentUser();
     if (!user) throw new Error("Unauthorized");
 
