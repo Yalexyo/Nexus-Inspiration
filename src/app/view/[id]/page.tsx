@@ -14,7 +14,7 @@ const USER_COLORS: Record<string, string> = {
     'user_01': 'bg-blue-500',
     'user_02': 'bg-emerald-500',
     'user_03': 'bg-amber-500',
-    'user_04': 'bg-rose-500',
+    'user_04': 'bg-orange-600',   // Xu：原来是 rose-500，跟收藏红心撞色，换成偏橙红拉开
     'user_05': 'bg-purple-500',
 };
 const getUserColor = (userId: string) => USER_COLORS[userId] || 'bg-slate-400';
