@@ -70,7 +70,6 @@ function FollowUpBadge({ value, size = 'md' }: { value: FollowUp | null; size?: 
 
 const TIME_FILTERS = [
     { value: 'all',   label: '全部' },
-    { value: 'today', label: '今天' },
     { value: 'week',  label: '本周' },
     { value: 'month', label: '本月' },
 ] as const;
@@ -81,7 +80,6 @@ type TimeFilter = (typeof TIME_FILTERS)[number]['value'];
 // 原来这两档算的是滚动 7 天 / 30 天，跟标签对不上，已按标签校正
 function timeCutoff(value: TimeFilter): Date | null {
     const now = new Date();
-    if (value === 'today') return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     if (value === 'week') {
         const day = now.getDay();                    // 周日是 0，换算成「周一为一周之始」
         const backToMonday = day === 0 ? 6 : day - 1;
