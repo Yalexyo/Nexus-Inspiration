@@ -787,14 +787,6 @@ export default function DashboardPage() {
                                 {followUpStats.get('none') || 0}
                             </span>
                         </button>
-                        {followUpFilter && (
-                            <button
-                                onClick={() => setFollowUpFilter(null)}
-                                className="px-2.5 h-7 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-700 transition-all"
-                            >
-                                清除
-                            </button>
-                        )}
                     </div>
                 </div>
 
