@@ -28,7 +28,8 @@ import {
     MessageSquare,
     Send,
     Heart,
-    Hash
+    Hash,
+    CalendarRange,
 } from 'lucide-react';
 import { getInspirations, Inspiration, deleteInspiration, updateInspiration, setFollowUp, toggleFavorite, fetchLinkTitle, getComments, addComment, deleteComment, Comment, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption, FOLLOW_UPS, FollowUp } from '@/lib/storage';
 import MushroomCardIcon from '@/components/MushroomCardIcon';
@@ -67,12 +68,24 @@ function FollowUpBadge({ value, size = 'md' }: { value: FollowUp | null; size?: 
     );
 }
 
+// 时间口径的单一真源：筛选和计数都从这里取，不许各写一份
+// ⚠️ 原来标签写「本周/本月」但算的是滚动 7 天 / 30 天，标签在说谎，改成如实写
 const TIME_FILTERS = [
-    { value: 'all', label: '全部' },
+    { value: 'all',   label: '全部' },
     { value: 'today', label: '今天' },
-    { value: 'week', label: '本周' },
-    { value: 'month', label: '本月' },
+    { value: 'week',  label: '近 7 天' },
+    { value: 'month', label: '近 30 天' },
 ] as const;
+
+type TimeFilter = (typeof TIME_FILTERS)[number]['value'];
+
+function timeCutoff(value: TimeFilter): Date | null {
+    const now = new Date();
+    if (value === 'today') return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (value === 'week') return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    if (value === 'month') return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    return null;
+}
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -89,7 +102,7 @@ export default function DashboardPage() {
     const [categoryFilter, setCategoryFilter] = useState<Category | null>(null);
     const [subcategoryFilter, setSubcategoryFilter] = useState<Subcategory | null>(null);
     const [userFilter, setUserFilter] = useState<string | null>(null);
-    const [timeFilter, setTimeFilter] = useState<string>('all');
+    const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
     const [isViewOnly, setIsViewOnly] = useState(false);
     const [copiedShare, setCopiedShare] = useState(false);
     // 评论：跟着详情面板走，打开哪条就拉哪条的
@@ -190,6 +203,19 @@ export default function DashboardPage() {
     };
 
     // 每个后续动作各有多少条，供筛选栏显示计数
+    // 时间各档各有多少条。跟其它筛选一样带数字——筛选器不只是开关，
+    // 也是「这个范围里有没有新东西」的仪表，为 0 就别让人白点一次
+    const timeStats = (() => {
+        const m = new Map<TimeFilter, number>();
+        TIME_FILTERS.forEach(tf => {
+            const cutoff = timeCutoff(tf.value);
+            m.set(tf.value, cutoff
+                ? inspirations.filter(i => new Date(i.createdAt) >= cutoff).length
+                : inspirations.length);
+        });
+        return m;
+    })();
+
     const followUpStats = (() => {
         const m = new Map<FollowUp | 'none', number>();
         inspirations.forEach(i => {
@@ -266,16 +292,8 @@ export default function DashboardPage() {
         if (favOnly) {
             result = result.filter(i => i.favorited);
         }
-        if (timeFilter !== 'all') {
-            const now = new Date();
-            let cutoff: Date;
-            if (timeFilter === 'today') {
-                cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            } else if (timeFilter === 'week') {
-                cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-            } else {
-                cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            }
+        const cutoff = timeCutoff(timeFilter);
+        if (cutoff) {
             result = result.filter(i => new Date(i.createdAt) >= cutoff);
         }
         if (search) {
@@ -614,9 +632,37 @@ export default function DashboardPage() {
 
                 {/* Visual Toolbar */}
                 <div className="flex flex-col gap-3 mb-8">
-                    {/* Row 1: Search + Actions */}
-                    <div className="flex flex-row items-center gap-3 w-full">
-                        <div className="flex-1 relative group">
+                    {/* Row 1: 时间 + 搜索 + 操作 */}
+                    <div className="flex flex-row flex-wrap lg:flex-nowrap items-center gap-3 w-full">
+                        {/* 时间维度：回答的是「看哪一段时间的东西」，先于分类/谁发的/后续动作这些属性问题，
+                            所以跟搜索同级放最上面一行。
+                            材质上刻意跟下面的属性筛选拉开：下面是平贴的 pill、选中＝红色实心；
+                            这里是凹槽轨道 + 抬起的白色滑块。层级靠材质区分，不靠加大字号硬凹。 */}
+                        <div className="flex items-center gap-1 h-11 px-1 bg-[#f4f1f0] border border-[#e7e0de] rounded-xl shrink-0 w-full lg:w-auto">
+                            <CalendarRange size={16} className="text-slate-400 mx-2 shrink-0" />
+                            {TIME_FILTERS.map((tf) => {
+                                const active = timeFilter === tf.value;
+                                return (
+                                    <button
+                                        key={tf.value}
+                                        onClick={() => setTimeFilter(tf.value)}
+                                        className={`flex-1 lg:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-sm font-bold whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 ${
+                                            active
+                                                ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-900/5'
+                                                : 'text-slate-600 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        {tf.label}
+                                        {/* 手机上宽度不够，条数是加分项不是功能，先让位给标签 */}
+                                        <span className={`hidden sm:inline text-xs font-medium ${active ? 'text-slate-500' : 'text-slate-600'}`}>
+                                            {timeStats.get(tf.value) ?? 0}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div className="flex-1 min-w-[180px] relative group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                             <input
                                 className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm placeholder:text-slate-400"
@@ -625,7 +671,7 @@ export default function DashboardPage() {
                                 onChange={(e) => setSearch(e.target.value)}
                             />
                         </div>
-                        <div className="flex items-center gap-2 ml-2">
+                        <div className="flex items-center gap-2 ml-auto lg:ml-2 shrink-0">
                             {/* View Toggle (Desktop) */}
                             <div className="hidden md:flex bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
                                 <button
@@ -709,7 +755,7 @@ export default function DashboardPage() {
                         </div>
                     )}
 
-                    {/* Row 4: User + Time Filter */}
+                    {/* Row 4: User Filter（时间维度已升到第一行搜索左侧，见 D0-18） */}
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
                             <button
@@ -734,22 +780,6 @@ export default function DashboardPage() {
                                 >
                                     <span className={`w-2 h-2 rounded-full shrink-0 ${userFilter === u.id ? 'bg-white' : getUserColor(u.id)}`} />
                                     {u.name}({inspirations.filter(i => i.user_id === u.id).length})
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm w-fit">
-                            {TIME_FILTERS.map((tf) => (
-                                <button
-                                    key={tf.value}
-                                    onClick={() => setTimeFilter(tf.value)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-                                        timeFilter === tf.value
-                                            ? 'bg-indigo-600 text-white shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                                    }`}
-                                >
-                                    {tf.label}
                                 </button>
                             ))}
                         </div>
