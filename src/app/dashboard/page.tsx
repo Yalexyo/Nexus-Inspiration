@@ -99,8 +99,7 @@ export default function DashboardPage() {
     const [postingComment, setPostingComment] = useState(false);
     // 编辑态里拖拽排序附件用。第一个 = 头图
     const [dragIdx, setDragIdx] = useState<number | null>(null);
-    const [tagFilter, setTagFilter] = useState<string | null>(null);
-    const [showAllTags, setShowAllTags] = useState(false);
+    const [followUpFilter, setFollowUpFilter] = useState<FollowUp | 'none' | null>(null);
     const [favOnly, setFavOnly] = useState(false);
 
     const getOwnerName = (userId: string) => {
@@ -190,11 +189,14 @@ export default function DashboardPage() {
         }
     };
 
-    // 全库标签按出现次数排序，供筛选栏用
-    const tagStats = (() => {
-        const m = new Map<string, number>();
-        inspirations.forEach(i => (i.tags || []).forEach(t => m.set(t, (m.get(t) || 0) + 1)));
-        return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    // 每个后续动作各有多少条，供筛选栏显示计数
+    const followUpStats = (() => {
+        const m = new Map<FollowUp | 'none', number>();
+        inspirations.forEach(i => {
+            const k = (i.follow_up || 'none') as FollowUp | 'none';
+            m.set(k, (m.get(k) || 0) + 1);
+        });
+        return m;
     })();
 
     const favCount = inspirations.filter(i => i.favorited).length;
@@ -256,8 +258,10 @@ export default function DashboardPage() {
         if (userFilter) {
             result = result.filter(i => i.user_id === userFilter);
         }
-        if (tagFilter) {
-            result = result.filter(i => (i.tags || []).includes(tagFilter));
+        if (followUpFilter) {
+            result = followUpFilter === 'none'
+                ? result.filter(i => !i.follow_up)
+                : result.filter(i => i.follow_up === followUpFilter);
         }
         if (favOnly) {
             result = result.filter(i => i.favorited);
@@ -286,7 +290,7 @@ export default function DashboardPage() {
             );
         }
         setFiltered(result);
-    }, [search, inspirations, categoryFilter, subcategoryFilter, userFilter, timeFilter, tagFilter, favOnly]);
+    }, [search, inspirations, categoryFilter, subcategoryFilter, userFilter, timeFilter, followUpFilter, favOnly]);
 
     const handleDelete = async (id: string) => {
         if (confirm('确定要删除这条灵感吗？删除后将无法恢复。')) {
@@ -742,43 +746,56 @@ export default function DashboardPage() {
                         </div>
                     </div>
 
-                    {/* Row 3: 标签筛选。标签是自由填写的，数量可能很多，默认只露高频的 */}
-                    {tagStats.length > 0 && (
-                        <div className="flex items-start gap-2 flex-wrap">
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 h-7 px-1 shrink-0">
-                                <Hash size={12} /> 标签
-                            </span>
-                            {(showAllTags ? tagStats : tagStats.slice(0, 14)).map(([t, n]) => (
+                    {/* Row 3: 按后续动作筛选。选中态用该标签自己的实色底 + 白字，跟卡片角标一个语言 */}
+                    <div className="flex items-start gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 h-7 px-1 shrink-0">
+                            <Hash size={12} /> 后续动作
+                        </span>
+                        {FOLLOW_UPS.map(f => {
+                            const active = followUpFilter === f;
+                            const bg = FOLLOW_UP_STYLE[f].bg;
+                            return (
                                 <button
-                                    key={t}
-                                    onClick={() => setTagFilter(tagFilter === t ? null : t)}
-                                    className={`px-2.5 h-7 rounded-lg text-xs font-bold transition-all border ${
-                                        tagFilter === t
-                                            ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                                            : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700'
+                                    key={f}
+                                    onClick={() => setFollowUpFilter(active ? null : f)}
+                                    className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg text-xs font-bold transition-all border ${
+                                        active
+                                            ? 'text-white border-transparent shadow-sm'
+                                            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:text-slate-900'
                                     }`}
+                                    style={active ? { backgroundColor: bg } : undefined}
                                 >
-                                    {t}<span className={tagFilter === t ? 'text-white/60 ml-1' : 'text-slate-300 ml-1'}>{n}</span>
+                                    {!active && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: bg }} />}
+                                    {f}
+                                    <span className={active ? 'text-white/70' : 'text-slate-300'}>
+                                        {followUpStats.get(f) || 0}
+                                    </span>
                                 </button>
-                            ))}
-                            {tagStats.length > 14 && (
-                                <button
-                                    onClick={() => setShowAllTags(v => !v)}
-                                    className="px-2.5 h-7 rounded-lg text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-all"
-                                >
-                                    {showAllTags ? '收起' : `更多 ${tagStats.length - 14} 个`}
-                                </button>
-                            )}
-                            {tagFilter && (
-                                <button
-                                    onClick={() => setTagFilter(null)}
-                                    className="px-2.5 h-7 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-700 transition-all"
-                                >
-                                    清除
-                                </button>
-                            )}
-                        </div>
-                    )}
+                            );
+                        })}
+                        {/* 还没人标过的，用来找漏掉的卡 */}
+                        <button
+                            onClick={() => setFollowUpFilter(followUpFilter === 'none' ? null : 'none')}
+                            className={`px-2.5 h-7 rounded-lg text-xs font-bold transition-all border ${
+                                followUpFilter === 'none'
+                                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                                    : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700'
+                            }`}
+                        >
+                            未标记
+                            <span className={followUpFilter === 'none' ? 'text-white/70 ml-1' : 'text-slate-300 ml-1'}>
+                                {followUpStats.get('none') || 0}
+                            </span>
+                        </button>
+                        {followUpFilter && (
+                            <button
+                                onClick={() => setFollowUpFilter(null)}
+                                className="px-2.5 h-7 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-700 transition-all"
+                            >
+                                清除
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* 只看收藏时给个明确提示，否则用户会以为卡片丢了 */}
