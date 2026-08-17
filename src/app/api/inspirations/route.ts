@@ -14,14 +14,18 @@ async function ensureDb() {
 }
 
 // GET all inspirations
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
         await ensureDb();
-        // 一次带出评论数和"评论人数"（去重后的人头），避免列表页 N+1
+        // 一次带出评论数、评论人数（去重人头）、收藏总数，以及"当前用户收没收藏"，避免列表页 N+1。
+        // user_id 由前端带上；不带就当未登录，favorited 一律 false
+        const viewer = req.nextUrl.searchParams.get('user_id') || '';
         const { rows } = await pool.query(`
             SELECT i.*,
                    COALESCE(c.cnt, 0)::int    AS comment_count,
-                   COALESCE(c.people, 0)::int AS commenter_count
+                   COALESCE(c.people, 0)::int AS commenter_count,
+                   COALESCE(f.cnt, 0)::int    AS favorite_count,
+                   (mf.user_id IS NOT NULL)   AS favorited
             FROM inspirations i
             LEFT JOIN (
                 SELECT inspiration_id,
@@ -29,8 +33,14 @@ export async function GET() {
                        COUNT(DISTINCT user_id) AS people
                 FROM inspiration_comments GROUP BY inspiration_id
             ) c ON c.inspiration_id = i.id
+            LEFT JOIN (
+                SELECT inspiration_id, COUNT(*) AS cnt
+                FROM inspiration_favorites GROUP BY inspiration_id
+            ) f ON f.inspiration_id = i.id
+            LEFT JOIN inspiration_favorites mf
+                   ON mf.inspiration_id = i.id AND mf.user_id = $1
             ORDER BY i.created_at DESC
-        `);
+        `, [viewer]);
         return NextResponse.json(rows);
     } catch (error) {
         console.error('GET /api/inspirations error:', error);

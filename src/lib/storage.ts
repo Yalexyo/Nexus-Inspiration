@@ -6,6 +6,7 @@ export interface MediaAsset {
     type: AssetType;
     content: string | File; // URL string or File object
     preview?: string; // For UI display (blob URL)
+    title?: string;   // 链接的网页标题 / 文件的原始文件名，用于界面显示
 }
 
 export const CATEGORIES = ['政策', '经济', '社会', '技术', '创意', '竞品动态'] as const;
@@ -48,11 +49,44 @@ export interface Inspiration {
     follow_up_by: string | null;   // 标记人的 user_id
     comment_count: number;         // 评论条数
     commenter_count: number;       // 评论人数（去重）
+    favorite_count: number;        // 收藏总数
+    favorited: boolean;            // 当前登录用户收藏了没
     createdAt: string;
 }
 
 function toActionableError(error: unknown): Error {
     return error instanceof Error ? error : new Error('Unexpected error while saving inspiration.');
+}
+
+// 抓链接标题；抓不到返回空串，调用方自行退回显示域名
+export async function fetchLinkTitle(url: string): Promise<string> {
+    try {
+        const res = await fetch(`/api/link-title?url=${encodeURIComponent(url)}`);
+        if (!res.ok) return '';
+        const d = await res.json();
+        return d.title || '';
+    } catch {
+        return '';
+    }
+}
+
+// 上传并返回 url + 原始文件名
+export async function uploadAssetWithName(assetContent: string | File): Promise<{ url: string; name: string }> {
+    const user = getCurrentUser();
+    const userId = user ? user.id : 'anon';
+    if (assetContent instanceof File) {
+        const formData = new FormData();
+        formData.append('file', assetContent);
+        formData.append('user_id', userId);
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Upload failed');
+        }
+        const data = await res.json();
+        return { url: data.url, name: data.name || '' };
+    }
+    return { url: assetContent, name: '' };
 }
 
 export async function uploadAsset(assetContent: string | File): Promise<string> {
@@ -95,13 +129,18 @@ function mapInspiration(item: any): Inspiration {
         follow_up_by: item.follow_up_by || null,
         comment_count: Number(item.comment_count) || 0,
         commenter_count: Number(item.commenter_count) || 0,
+        favorite_count: Number(item.favorite_count) || 0,
+        favorited: !!item.favorited,
         createdAt: item.created_at
     };
 }
 
 export async function getInspirations(): Promise<Inspiration[]> {
     try {
-        const res = await fetch('/api/inspirations');
+        // 带上 user_id，后端才能算出"我收藏了没"
+        const user = getCurrentUser();
+        const q = user ? `?user_id=${encodeURIComponent(user.id)}` : '';
+        const res = await fetch('/api/inspirations' + q);
         if (!res.ok) return [];
         const data = await res.json();
         return data.map(mapInspiration);
@@ -137,6 +176,26 @@ export async function setFollowUp(id: string, followUp: FollowUp | null) {
     if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'Failed to update follow-up');
+    }
+}
+
+// ---- 收藏 ----
+
+// 收藏 / 取消收藏。收藏是私人的，别人看不到你收了什么
+export async function toggleFavorite(inspirationId: string, next: boolean) {
+    const user = getCurrentUser();
+    if (!user) throw new Error("请先登录再收藏");
+    const res = next
+        ? await fetch(`/api/inspirations/${inspirationId}/favorite`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: user.id })
+        })
+        : await fetch(`/api/inspirations/${inspirationId}/favorite?user_id=${encodeURIComponent(user.id)}`,
+            { method: 'DELETE' });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || '操作失败');
     }
 }
 
@@ -185,17 +244,22 @@ export async function deleteComment(inspirationId: string, commentId: string) {
 }
 
 // 新建时后续动作标签可以不填（新灵感默认没有标记，看过之后再标）
-export async function saveInspiration(item: Omit<Inspiration, 'id' | 'card_no' | 'createdAt' | 'user_id' | 'follow_up' | 'follow_up_by' | 'comment_count' | 'commenter_count'> & { follow_up?: FollowUp | null }) {
+export async function saveInspiration(item: Omit<Inspiration, 'id' | 'card_no' | 'createdAt' | 'user_id' | 'follow_up' | 'follow_up_by' | 'comment_count' | 'commenter_count' | 'favorite_count' | 'favorited'> & { follow_up?: FollowUp | null }) {
     const user = getCurrentUser();
     if (!user) throw new Error("User must be logged in to save.");
 
     try {
         // 1. Upload file assets
         const processedAssets = await Promise.all(
-            item.assets.map(async (asset) => ({
-                type: asset.type,
-                content: await uploadAsset(asset.content)
-            }))
+            item.assets.map(async (asset) => {
+                const up = await uploadAssetWithName(asset.content);
+                return {
+                    type: asset.type,
+                    content: up.url,
+                    // 没显式给 title 的话，文件用原始文件名兜底
+                    ...(asset.title || up.name ? { title: asset.title || up.name } : {})
+                };
+            })
         );
 
         // 2. Save to DB via API
@@ -237,10 +301,14 @@ export async function updateInspiration(id: string, updates: Partial<Pick<Inspir
     // Upload new File assets
     if (updates.assets) {
         const processedAssets = await Promise.all(
-            updates.assets.map(async (asset) => ({
-                type: asset.type,
-                content: await uploadAsset(asset.content)
-            }))
+            updates.assets.map(async (asset) => {
+                const up = await uploadAssetWithName(asset.content);
+                return {
+                    type: asset.type,
+                    content: up.url,
+                    ...(asset.title || up.name ? { title: asset.title || up.name } : {})
+                };
+            })
         );
         processedUpdates.assets = processedAssets;
     }

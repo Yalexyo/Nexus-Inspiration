@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
 
         // Return a URL path that can be served
         const publicUrl = `/api/uploads/${safeFolder}/${fileName}`;
-        return NextResponse.json({ url: publicUrl }, { status: 201 });
+        // 原始文件名一起返回：落盘用的是 uuid，界面上要显示用户认得的名字
+        return NextResponse.json({ url: publicUrl, name: file.name || '' }, { status: 201 });
     } catch (error) {
         console.error('POST /api/upload error:', error);
         return NextResponse.json({ error: 'Upload failed' }, { status: 500 });

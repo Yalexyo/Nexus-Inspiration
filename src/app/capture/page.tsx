@@ -13,7 +13,7 @@ import {
     ExternalLink,
     FileText
 } from 'lucide-react';
-import { saveInspiration, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption } from '@/lib/storage';
+import { saveInspiration, fetchLinkTitle, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption } from '@/lib/storage';
 import { getCurrentUser } from '@/lib/auth';
 import VideoThumb from '@/components/VideoThumb';
 
@@ -98,7 +98,8 @@ export default function CapturePage() {
             setAssets(prev => [...prev, {
                 type,
                 content: file, // Store actual File object
-                preview // Store blob URL for UI
+                preview, // Store blob URL for UI
+                title: file.name // 原始文件名当显示名，否则界面上只剩一串 uuid
             }]);
         }
     };
@@ -119,14 +120,18 @@ export default function CapturePage() {
 
         setIsMediaLoading(true);
         try {
-            const res = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
+            // 缩略图和网页标题一起抓；标题抓不到不影响加链接
+            const [res, title] = await Promise.all([
+                fetch(`/api/link-preview?url=${encodeURIComponent(url)}`),
+                fetchLinkTitle(url),
+            ]);
             const data = await res.json();
 
             if (data.success && data.url) {
                 // Store the original URL in content, and the preview/screenshot in preview
-                setAssets(prev => [...prev, { type: 'website', content: url, preview: data.url }]);
+                setAssets(prev => [...prev, { type: 'website', content: url, preview: data.url, ...(title ? { title } : {}) }]);
             } else {
-                setAssets(prev => [...prev, { type: 'website', content: url }]);
+                setAssets(prev => [...prev, { type: 'website', content: url, ...(title ? { title } : {}) }]);
             }
         } catch (e) {
             console.error(e);
@@ -185,7 +190,7 @@ export default function CapturePage() {
                                                 <Globe size={48} className="text-indigo-500" />
                                             </div>
                                             <div className="text-center max-w-md px-4">
-                                                <h3 className="font-bold text-slate-900 text-lg mb-1">External Website</h3>
+                                                <h3 className="font-bold text-slate-900 text-lg mb-1 break-all">{assets[0].title || 'External Website'}</h3>
                                                 <p className="text-sm break-all">{assets[0].content as string}</p>
                                             </div>
                                             <a
@@ -250,15 +255,18 @@ export default function CapturePage() {
                                     {ctx.type === 'video' ? (
                                         <VideoThumb src={ctx.preview || (typeof ctx.content === 'string' ? ctx.content : '')} iconSize={14} />
                                     ) : ctx.type === 'pdf' ? (
-                                        <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-500 gap-1 p-2 text-center">
+                                        <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-500 gap-1 p-2 text-center" title={ctx.title || 'PDF'}>
                                             <FileText size={24} />
-                                            <span className="text-[8px] leading-tight font-medium">PDF</span>
+                                            <span className="text-[8px] leading-tight font-medium line-clamp-2 w-full px-1 break-all">{ctx.title || 'PDF'}</span>
                                         </div>
                                     ) : ctx.type === 'website' ? (
-                                        <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-500 gap-1 p-2 text-center">
+                                        <div
+                                            className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-500 gap-1 p-2 text-center"
+                                            title={ctx.title || (typeof ctx.content === 'string' ? ctx.content : 'Link')}
+                                        >
                                             <Globe size={24} />
-                                            <span className="text-[8px] leading-tight font-medium truncate w-full px-1">
-                                                {typeof ctx.content === 'string' ? new URL(ctx.content).hostname : 'Link'}
+                                            <span className="text-[8px] leading-tight font-medium line-clamp-2 w-full px-1 break-all">
+                                                {ctx.title || (typeof ctx.content === 'string' ? new URL(ctx.content).hostname : 'Link')}
                                             </span>
                                         </div>
                                     ) : (

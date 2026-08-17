@@ -137,6 +137,20 @@ export async function initDatabase() {
             ON inspiration_comments(inspiration_id);
         `);
 
+        // 收藏表。每人每卡最多一条，主键即去重
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS inspiration_favorites (
+                inspiration_id UUID NOT NULL REFERENCES inspirations(id) ON DELETE CASCADE,
+                user_id TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                PRIMARY KEY (inspiration_id, user_id)
+            );
+        `);
+        await client.query(`
+            CREATE INDEX IF NOT EXISTS inspiration_favorites_user_idx
+            ON inspiration_favorites(user_id);
+        `);
+
         console.log('Database initialized: inspirations table ready');
     } finally {
         client.release();

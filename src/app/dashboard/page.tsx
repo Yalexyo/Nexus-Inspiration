@@ -26,9 +26,11 @@ import {
     Link as LinkIcon,
     FileText,
     MessageSquare,
-    Send
+    Send,
+    Heart,
+    Hash
 } from 'lucide-react';
-import { getInspirations, Inspiration, deleteInspiration, updateInspiration, setFollowUp, getComments, addComment, deleteComment, Comment, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption, FOLLOW_UPS, FollowUp } from '@/lib/storage';
+import { getInspirations, Inspiration, deleteInspiration, updateInspiration, setFollowUp, toggleFavorite, fetchLinkTitle, getComments, addComment, deleteComment, Comment, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption, FOLLOW_UPS, FollowUp } from '@/lib/storage';
 import MushroomCardIcon from '@/components/MushroomCardIcon';
 
 const USER_COLORS: Record<string, string> = {
@@ -97,6 +99,9 @@ export default function DashboardPage() {
     const [postingComment, setPostingComment] = useState(false);
     // 编辑态里拖拽排序附件用。第一个 = 头图
     const [dragIdx, setDragIdx] = useState<number | null>(null);
+    const [tagFilter, setTagFilter] = useState<string | null>(null);
+    const [showAllTags, setShowAllTags] = useState(false);
+    const [favOnly, setFavOnly] = useState(false);
 
     const getOwnerName = (userId: string) => {
         const users = getUsers();
@@ -185,6 +190,35 @@ export default function DashboardPage() {
         }
     };
 
+    // 全库标签按出现次数排序，供筛选栏用
+    const tagStats = (() => {
+        const m = new Map<string, number>();
+        inspirations.forEach(i => (i.tags || []).forEach(t => m.set(t, (m.get(t) || 0) + 1)));
+        return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    })();
+
+    const favCount = inspirations.filter(i => i.favorited).length;
+
+    // 收藏：先改本地再发请求，失败回滚。收藏是私人的，不影响别人看到的内容
+    const handleToggleFavorite = async (item: Inspiration, e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        if (isViewOnly) { alert('请先登录再收藏'); return; }
+        const next = !item.favorited;
+        const apply = (fav: boolean, delta: number) => {
+            setInspirations(list => list.map(i => i.id === item.id
+                ? { ...i, favorited: fav, favorite_count: Math.max(0, (i.favorite_count || 0) + delta) } : i));
+            setSelectedItem(cur => cur && cur.id === item.id
+                ? { ...cur, favorited: fav, favorite_count: Math.max(0, (cur.favorite_count || 0) + delta) } : cur);
+        };
+        apply(next, next ? 1 : -1);
+        try {
+            await toggleFavorite(item.id, next);
+        } catch (err) {
+            apply(!next, next ? -1 : 1);
+            alert(err instanceof Error ? err.message : '操作失败');
+        }
+    };
+
     const handleShare = (id: string) => {
         const url = `${window.location.origin}/view/${id}`;
         navigator.clipboard.writeText(url).then(() => {
@@ -194,6 +228,16 @@ export default function DashboardPage() {
     };
 
     // Reset subcategory filter when category filter changes
+    // 全屏详情没有遮罩可点，ESC 兜底关闭（编辑态不关，防误触丢草稿）
+    useEffect(() => {
+        if (!selectedItem) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !isEditing) { setSelectedItem(null); }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [selectedItem, isEditing]);
+
     useEffect(() => {
         if (categoryFilter === DESIGN_CATEGORY) {
             setSubcategoryFilter(null);
@@ -211,6 +255,12 @@ export default function DashboardPage() {
         }
         if (userFilter) {
             result = result.filter(i => i.user_id === userFilter);
+        }
+        if (tagFilter) {
+            result = result.filter(i => (i.tags || []).includes(tagFilter));
+        }
+        if (favOnly) {
+            result = result.filter(i => i.favorited);
         }
         if (timeFilter !== 'all') {
             const now = new Date();
@@ -236,7 +286,7 @@ export default function DashboardPage() {
             );
         }
         setFiltered(result);
-    }, [search, inspirations, categoryFilter, subcategoryFilter, userFilter, timeFilter]);
+    }, [search, inspirations, categoryFilter, subcategoryFilter, userFilter, timeFilter, tagFilter, favOnly]);
 
     const handleDelete = async (id: string) => {
         if (confirm('确定要删除这条灵感吗？删除后将无法恢复。')) {
@@ -320,22 +370,28 @@ export default function DashboardPage() {
             const type = file.type === 'application/pdf' ? 'pdf' : file.type.startsWith('video/') ? 'video' : 'image';
             // Create preview URL
             const preview = URL.createObjectURL(file);
-            newAssets.push({ type, content: file, preview });
+            // 原始文件名当显示名，PDF 尤其需要——否则界面上只有一串 uuid
+            newAssets.push({ type, content: file, preview, title: file.name });
         }
 
         setEditForm(prev => prev ? { ...prev, assets: [...prev.assets, ...newAssets] } : null);
     };
 
-    const handleAddLink = () => {
+    const handleAddLink = async () => {
         if (!editForm) return;
-        const url = prompt('Please enter the website URL:');
+        const url = prompt('请输入网址：');
         if (!url) return;
-
-        // Simple URL validation could go here
-
+        // 先加进去（标题留空），再异步补标题，不让用户等抓取
         setEditForm(prev => prev ? {
             ...prev,
             assets: [...prev.assets, { type: 'website', content: url }]
+        } : null);
+        const title = await fetchLinkTitle(url);
+        if (!title) return;
+        setEditForm(prev => prev ? {
+            ...prev,
+            assets: prev.assets.map(a =>
+                a.type === 'website' && a.content === url && !a.title ? { ...a, title } : a)
         } : null);
     };
 
@@ -349,17 +405,22 @@ export default function DashboardPage() {
             );
         } else if (asset.type === 'pdf') {
             return (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-500 gap-1 p-2 text-center">
+                <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-500 gap-1 p-2 text-center" title={asset.title || 'PDF'}>
                     <FileText size={24} />
-                    <span className="text-[10px] leading-tight font-medium">PDF</span>
+                    <span className="text-[10px] leading-tight font-medium line-clamp-2 w-full px-1 break-all">
+                        {asset.title || 'PDF'}
+                    </span>
                 </div>
             );
         } else if (asset.type === 'website') {
             return (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-500 gap-1 p-2 text-center">
+                <div
+                    className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-500 gap-1 p-2 text-center"
+                    title={asset.title || (typeof asset.content === 'string' ? asset.content : 'Link')}
+                >
                     <Globe size={24} />
-                    <span className="text-[10px] leading-tight font-medium truncate w-full px-1">
-                        {typeof asset.content === 'string' ? (() => { try { return new URL(asset.content as string).hostname; } catch { return 'Link'; } })() : 'Link'}
+                    <span className="text-[10px] leading-tight font-medium line-clamp-2 w-full px-1 break-all">
+                        {asset.title || (typeof asset.content === 'string' ? (() => { try { return new URL(asset.content as string).hostname; } catch { return 'Link'; } })() : 'Link')}
                     </span>
                 </div>
             );
@@ -395,7 +456,7 @@ export default function DashboardPage() {
                         <FileText size={48} className="text-red-500" />
                     </div>
                     <div className="text-center max-w-md px-4">
-                        <h3 className="font-bold text-slate-900 text-lg mb-1">PDF Document</h3>
+                        <h3 className="font-bold text-slate-900 text-lg mb-1 break-all">{asset.title || 'PDF Document'}</h3>
                     </div>
                     {pdfUrl && (
                         <a
@@ -416,7 +477,7 @@ export default function DashboardPage() {
                         <Globe size={48} className="text-indigo-500" />
                     </div>
                     <div className="text-center max-w-md px-4">
-                        <h3 className="font-bold text-slate-900 text-lg mb-1">External Website</h3>
+                        <h3 className="font-bold text-slate-900 text-lg mb-1 break-all">{asset.title || 'External Website'}</h3>
                         <p className="text-sm break-all">{asset.content as string}</p>
                     </div>
                     <a
@@ -463,6 +524,17 @@ export default function DashboardPage() {
                             </Link>
                         ) : (
                             <>
+                                {/* 收藏入口：跟头像同级。点开＝只看自己收藏的卡，数字是我收了多少 */}
+                                <button
+                                    onClick={() => setFavOnly(v => !v)}
+                                    title={favOnly ? '显示全部灵感' : '只看我的收藏'}
+                                    className={`flex items-center gap-1.5 px-3 h-9 rounded-full text-sm font-bold transition-all ${
+                                        favOnly ? 'bg-rose-500 text-white shadow-sm' : 'text-rose-500 hover:bg-rose-50'
+                                    }`}
+                                >
+                                    <Heart size={18} className={favOnly ? 'fill-white' : 'fill-rose-500'} />
+                                    {favCount}
+                                </button>
                                 <button
                                     onClick={() => {
                                         const { logout } = require('@/lib/auth');
@@ -501,11 +573,24 @@ export default function DashboardPage() {
                                 登录
                             </Link>
                         ) : (
-                            <Link href="/settings">
-                                <Button variant="ghost" size="icon" className="text-slate-500 hover:bg-slate-100 rounded-full">
-                                    <Settings size={20} />
-                                </Button>
-                            </Link>
+                            <>
+                                {/* 收藏入口：点开只看自己收藏的卡，数字是我收了多少 */}
+                                <button
+                                    onClick={() => setFavOnly(v => !v)}
+                                    title={favOnly ? '显示全部灵感' : '只看我的收藏'}
+                                    className={`flex items-center gap-1.5 px-3 h-9 rounded-full text-sm font-bold transition-all ${
+                                        favOnly ? 'bg-rose-500 text-white shadow-sm' : 'text-rose-500 hover:bg-rose-50'
+                                    }`}
+                                >
+                                    <Heart size={17} className={favOnly ? 'fill-white' : 'fill-rose-500'} />
+                                    {favCount}
+                                </button>
+                                <Link href="/settings">
+                                    <Button variant="ghost" size="icon" className="text-slate-500 hover:bg-slate-100 rounded-full">
+                                        <Settings size={20} />
+                                    </Button>
+                                </Link>
+                            </>
                         )}
                     </div>
                 </header>
@@ -656,7 +741,54 @@ export default function DashboardPage() {
                             ))}
                         </div>
                     </div>
+
+                    {/* Row 3: 标签筛选。标签是自由填写的，数量可能很多，默认只露高频的 */}
+                    {tagStats.length > 0 && (
+                        <div className="flex items-start gap-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 h-7 px-1 shrink-0">
+                                <Hash size={12} /> 标签
+                            </span>
+                            {(showAllTags ? tagStats : tagStats.slice(0, 14)).map(([t, n]) => (
+                                <button
+                                    key={t}
+                                    onClick={() => setTagFilter(tagFilter === t ? null : t)}
+                                    className={`px-2.5 h-7 rounded-lg text-xs font-bold transition-all border ${
+                                        tagFilter === t
+                                            ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                                            : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700'
+                                    }`}
+                                >
+                                    {t}<span className={tagFilter === t ? 'text-white/60 ml-1' : 'text-slate-300 ml-1'}>{n}</span>
+                                </button>
+                            ))}
+                            {tagStats.length > 14 && (
+                                <button
+                                    onClick={() => setShowAllTags(v => !v)}
+                                    className="px-2.5 h-7 rounded-lg text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-all"
+                                >
+                                    {showAllTags ? '收起' : `更多 ${tagStats.length - 14} 个`}
+                                </button>
+                            )}
+                            {tagFilter && (
+                                <button
+                                    onClick={() => setTagFilter(null)}
+                                    className="px-2.5 h-7 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-700 transition-all"
+                                >
+                                    清除
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
+
+                {/* 只看收藏时给个明确提示，否则用户会以为卡片丢了 */}
+                {favOnly && (
+                    <div className="-mt-4 mb-6 flex items-center gap-2 text-sm text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5">
+                        <Heart size={15} className="fill-rose-500 text-rose-500" />
+                        正在只看我的收藏（{favCount} 条）
+                        <button onClick={() => setFavOnly(false)} className="ml-auto font-bold hover:underline">显示全部</button>
+                    </div>
+                )}
 
                 {/* Content Grid/List */}
                 {filtered.length === 0 ? (
@@ -730,7 +862,18 @@ export default function DashboardPage() {
                                                 </span>
                                             ))}
                                         </div>
-                                        <div className="px-4 text-slate-300 group-hover:text-indigo-400">
+                                        {!isViewOnly && (
+                                            <button
+                                                onClick={(e) => handleToggleFavorite(item, e)}
+                                                title={item.favorited ? '取消收藏' : '收藏'}
+                                                className={`p-2 rounded-full transition-all ${
+                                                    item.favorited ? 'text-rose-500' : 'text-slate-300 hover:text-rose-400'
+                                                }`}
+                                            >
+                                                <Heart size={17} className={item.favorited ? 'fill-rose-500' : ''} />
+                                            </button>
+                                        )}
+                                        <div className="px-2 text-slate-300 group-hover:text-indigo-400">
                                             <ExternalLink size={18} />
                                         </div>
                                     </div>
@@ -758,14 +901,18 @@ export default function DashboardPage() {
                                                     {item.assets[0].type === 'video' ? (
                                                         <VideoThumb src={item.assets[0].content as string} iconSize={22} zoomOnHover />
                                                     ) : item.assets[0].type === 'pdf' ? (
-                                                        <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-400 group-hover:bg-red-100 transition-colors">
+                                                        <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-400 group-hover:bg-red-100 transition-colors px-4">
                                                             <FileText size={48} />
-                                                            <span className="text-xs font-bold mt-2 opacity-60">PDF</span>
+                                                            <span className="text-xs font-bold mt-2 opacity-60 line-clamp-2 text-center break-all">
+                                                                {item.assets[0].title || 'PDF'}
+                                                            </span>
                                                         </div>
                                                     ) : item.assets[0].type === 'website' ? (
-                                                        <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-400 group-hover:bg-indigo-100 transition-colors">
+                                                        <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 text-indigo-400 group-hover:bg-indigo-100 transition-colors px-4">
                                                             <Globe size={48} />
-                                                            <span className="text-xs font-bold mt-2 opacity-60">网站</span>
+                                                            <span className="text-xs font-bold mt-2 opacity-60 line-clamp-2 text-center break-all">
+                                                                {item.assets[0].title || '网站'}
+                                                            </span>
                                                         </div>
                                                     ) : (
                                                         <img
@@ -781,6 +928,20 @@ export default function DashboardPage() {
                                                 </div>
                                             )}
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            {/* 收藏红心：已收藏常亮，未收藏 hover 才出现，避免满屏空心 */}
+                                            {!isViewOnly && (
+                                                <button
+                                                    onClick={(e) => handleToggleFavorite(item, e)}
+                                                    title={item.favorited ? '取消收藏' : '收藏'}
+                                                    className={`absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm transition-all ${
+                                                        item.favorited
+                                                            ? 'bg-white/90 text-rose-500 shadow-sm'
+                                                            : 'bg-black/25 text-white opacity-0 group-hover:opacity-100 hover:bg-black/40'
+                                                    }`}
+                                                >
+                                                    <Heart size={16} className={item.favorited ? 'fill-rose-500' : ''} />
+                                                </button>
+                                            )}
                                         </div>
                                         <div className="p-5 flex flex-col gap-3 flex-1">
                                             <div>
@@ -831,12 +992,26 @@ export default function DashboardPage() {
 
             {/* Detail Sheet (Soft Modern) */}
             {selectedItem && (
-                <div className="fixed inset-0 z-[60] flex justify-end">
-                    <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" onClick={() => setSelectedItem(null)} />
-                    <div className="relative w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-                        <header className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div className="fixed inset-0 z-[60] bg-white animate-in fade-in duration-200">
+                    <div className="relative w-full h-full bg-white flex flex-col">
+                        {/* 全屏详情。正文用 max-w 收窄，宽屏上一行拉到 1900px 没法读 */}
+                        <header className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
                             <h2 className="text-lg font-bold text-slate-900">灵感详情</h2>
                             <div className="flex items-center gap-2">
+                                {!isEditing && !isViewOnly && (
+                                    <button
+                                        onClick={(e) => handleToggleFavorite(selectedItem, e)}
+                                        className={`p-2 rounded-full transition-all flex items-center gap-1.5 ${
+                                            selectedItem.favorited ? 'text-rose-500 hover:bg-rose-50' : 'text-slate-400 hover:text-rose-500 hover:bg-slate-100'
+                                        }`}
+                                        title={selectedItem.favorited ? '取消收藏' : '收藏'}
+                                    >
+                                        <Heart size={18} className={selectedItem.favorited ? 'fill-rose-500' : ''} />
+                                        {!!selectedItem.favorite_count && (
+                                            <span className="text-xs font-bold">{selectedItem.favorite_count}</span>
+                                        )}
+                                    </button>
+                                )}
                                 {!isEditing && (
                                     <button
                                         onClick={() => handleShare(String(selectedItem.card_no))}
@@ -914,6 +1089,7 @@ export default function DashboardPage() {
                         )}
 
                         <div className="flex-1 overflow-y-auto">
+                            <div className="mx-auto w-full max-w-4xl">
                             {/* Media Section: Editable vs View */}
                             {isEditing && editForm ? (
                                 <div className="w-full bg-slate-50 border-b border-slate-100">
@@ -1315,10 +1491,10 @@ export default function DashboardPage() {
                                                                         {c.user_id === currentUserId && (
                                                                             <button
                                                                                 onClick={() => handleDeleteComment(c.id)}
-                                                                                className="ml-auto text-slate-300 hover:text-red-500 opacity-0 group-hover/c:opacity-100 transition-opacity"
+                                                                                className="ml-auto inline-flex items-center gap-1 text-slate-400 hover:text-red-500 transition-colors"
                                                                                 title="删除我的评论"
                                                                             >
-                                                                                <Trash2 size={13} />
+                                                                                <Trash2 size={13} /> 删除
                                                                             </button>
                                                                         )}
                                                                     </div>
@@ -1368,9 +1544,10 @@ export default function DashboardPage() {
                                     </>
                                 )}
                             </div>
+                            </div>
                         </div>
 
-                        <footer className={`p-4 border-t border-slate-100 bg-slate-50 ${isEditing ? 'grid grid-cols-2 gap-3' : 'flex'}`}>
+                        <footer className={`p-4 border-t border-slate-100 bg-slate-50 shrink-0 mx-auto w-full max-w-4xl ${isEditing ? 'grid grid-cols-2 gap-3' : 'flex'}`}>
                             {isEditing ? (
                                 <>
                                     <button
