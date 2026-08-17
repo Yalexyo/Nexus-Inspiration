@@ -68,22 +68,26 @@ function FollowUpBadge({ value, size = 'md' }: { value: FollowUp | null; size?: 
     );
 }
 
-// 时间口径的单一真源：筛选和计数都从这里取，不许各写一份
-// ⚠️ 原来标签写「本周/本月」但算的是滚动 7 天 / 30 天，标签在说谎，改成如实写
 const TIME_FILTERS = [
     { value: 'all',   label: '全部' },
     { value: 'today', label: '今天' },
-    { value: 'week',  label: '近 7 天' },
-    { value: 'month', label: '近 30 天' },
+    { value: 'week',  label: '本周' },
+    { value: 'month', label: '本月' },
 ] as const;
 
 type TimeFilter = (typeof TIME_FILTERS)[number]['value'];
 
+// 时间口径的单一真源。写「本周」就按自然周算（周一起），写「本月」就按自然月算——
+// 原来这两档算的是滚动 7 天 / 30 天，跟标签对不上，已按标签校正
 function timeCutoff(value: TimeFilter): Date | null {
     const now = new Date();
     if (value === 'today') return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (value === 'week') return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    if (value === 'month') return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    if (value === 'week') {
+        const day = now.getDay();                    // 周日是 0，换算成「周一为一周之始」
+        const backToMonday = day === 0 ? 6 : day - 1;
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate() - backToMonday);
+    }
+    if (value === 'month') return new Date(now.getFullYear(), now.getMonth(), 1);
     return null;
 }
 
@@ -203,19 +207,6 @@ export default function DashboardPage() {
     };
 
     // 每个后续动作各有多少条，供筛选栏显示计数
-    // 时间各档各有多少条。跟其它筛选一样带数字——筛选器不只是开关，
-    // 也是「这个范围里有没有新东西」的仪表，为 0 就别让人白点一次
-    const timeStats = (() => {
-        const m = new Map<TimeFilter, number>();
-        TIME_FILTERS.forEach(tf => {
-            const cutoff = timeCutoff(tf.value);
-            m.set(tf.value, cutoff
-                ? inspirations.filter(i => new Date(i.createdAt) >= cutoff).length
-                : inspirations.length);
-        });
-        return m;
-    })();
-
     const followUpStats = (() => {
         const m = new Map<FollowUp | 'none', number>();
         inspirations.forEach(i => {
@@ -653,10 +644,6 @@ export default function DashboardPage() {
                                         }`}
                                     >
                                         {tf.label}
-                                        {/* 手机上宽度不够，条数是加分项不是功能，先让位给标签 */}
-                                        <span className={`hidden sm:inline text-xs font-medium ${active ? 'text-slate-500' : 'text-slate-600'}`}>
-                                            {timeStats.get(tf.value) ?? 0}
-                                        </span>
                                     </button>
                                 );
                             })}
