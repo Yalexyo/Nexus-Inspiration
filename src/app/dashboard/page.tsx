@@ -517,8 +517,28 @@ export default function DashboardPage() {
                             </div>
                             灵感卡片
                         </div>
+                        {/* 仪表盘 / 收藏 是同一页的两个视图，不是两个路由，所以用 button 不用 Link */}
                         <nav className="flex items-center gap-6">
-                            <Link href="/dashboard" className="text-sm font-bold text-slate-900 border-b-2 border-indigo-600 pb-4 mt-4">仪表盘</Link>
+                            <button
+                                onClick={() => setFavOnly(false)}
+                                className={`text-sm font-bold pb-4 mt-4 border-b-2 transition-colors ${
+                                    favOnly ? 'text-slate-400 border-transparent hover:text-slate-700' : 'text-slate-900 border-indigo-600'
+                                }`}
+                            >
+                                仪表盘
+                            </button>
+                            {!isViewOnly && (
+                                <button
+                                    onClick={() => setFavOnly(true)}
+                                    className={`text-sm font-bold pb-4 mt-4 border-b-2 transition-colors inline-flex items-center gap-1.5 ${
+                                        favOnly ? 'text-slate-900 border-rose-500' : 'text-slate-400 border-transparent hover:text-slate-700'
+                                    }`}
+                                >
+                                    <Heart size={16} className={favOnly ? 'fill-rose-500 text-rose-500' : 'fill-rose-400 text-rose-400'} />
+                                    收藏
+                                    <span className={favOnly ? 'text-rose-500' : 'text-slate-300'}>{favCount}</span>
+                                </button>
+                            )}
                         </nav>
                     </div>
                     <div className="flex items-center gap-4">
@@ -528,17 +548,6 @@ export default function DashboardPage() {
                             </Link>
                         ) : (
                             <>
-                                {/* 收藏入口：跟头像同级。点开＝只看自己收藏的卡，数字是我收了多少 */}
-                                <button
-                                    onClick={() => setFavOnly(v => !v)}
-                                    title={favOnly ? '显示全部灵感' : '只看我的收藏'}
-                                    className={`flex items-center gap-1.5 px-3 h-9 rounded-full text-sm font-bold transition-all ${
-                                        favOnly ? 'bg-rose-500 text-white shadow-sm' : 'text-rose-500 hover:bg-rose-50'
-                                    }`}
-                                >
-                                    <Heart size={18} className={favOnly ? 'fill-white' : 'fill-rose-500'} />
-                                    {favCount}
-                                </button>
                                 <button
                                     onClick={() => {
                                         const { logout } = require('@/lib/auth');
@@ -790,23 +799,16 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* 只看收藏时给个明确提示，否则用户会以为卡片丢了 */}
-                {favOnly && (
-                    <div className="-mt-4 mb-6 flex items-center gap-2 text-sm text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-4 py-2.5">
-                        <Heart size={15} className="fill-rose-500 text-rose-500" />
-                        正在只看我的收藏（{favCount} 条）
-                        <button onClick={() => setFavOnly(false)} className="ml-auto font-bold hover:underline">显示全部</button>
-                    </div>
-                )}
-
                 {/* Content Grid/List */}
                 {filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-32 text-slate-400">
                         <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
                             <Search size={32} className="text-slate-300" />
                         </div>
-                        <p className="font-medium text-slate-500">暂无灵感</p>
-                        <p className="text-sm text-slate-400 mt-1">试试其他搜索词，或新建一条灵感</p>
+                        <p className="font-medium text-slate-500">{favOnly ? '收藏夹是空的' : '暂无灵感'}</p>
+                        <p className="text-sm text-slate-400 mt-1">
+                            {favOnly ? '在卡片右上角点红心，就会收进这里' : '试试其他搜索词，或新建一条灵感'}
+                        </p>
                     </div>
                 ) : (
                     <>
