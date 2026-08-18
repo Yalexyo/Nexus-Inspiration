@@ -673,7 +673,13 @@ export default function DashboardPage() {
                             <div className="flex items-center gap-1 h-11 px-1 bg-[#f4f1f0] border border-[#e7e0de] rounded-xl">
                                 {/* 日历按钮＝翻旧账的入口：点开按年月挑，挑完变成轨道里的第三档 */}
                                 <button
-                                    onClick={() => { setPickerYear(customMonth?.y ?? new Date().getFullYear()); setMonthPickerOpen(v => !v); }}
+                                    onClick={() => {
+                                        // 默认落在当年，但夹进「有内容的年份」区间——
+                                        // 否则跨年后头几天打开就是一整年全灰
+                                        const want = customMonth?.y ?? new Date().getFullYear();
+                                        setPickerYear(Math.min(monthStats.maxYear, Math.max(monthStats.minYear, want)));
+                                        setMonthPickerOpen(v => !v);
+                                    }}
                                     title="按年月挑"
                                     className={`shrink-0 w-9 h-9 rounded-lg inline-flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 ${
                                         monthPickerOpen
