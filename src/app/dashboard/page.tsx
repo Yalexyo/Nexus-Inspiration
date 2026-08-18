@@ -70,8 +70,7 @@ function FollowUpBadge({ value, size = 'md' }: { value: FollowUp | null; size?: 
 
 const TIME_FILTERS = [
     { value: 'all',   label: '全部' },
-    { value: 'week',  label: '本周' },
-    { value: 'month', label: '本月' },
+    { value: 'month', label: '本月精选' },
 ] as const;
 
 type TimeFilter = (typeof TIME_FILTERS)[number]['value'];
@@ -80,11 +79,6 @@ type TimeFilter = (typeof TIME_FILTERS)[number]['value'];
 // 原来这两档算的是滚动 7 天 / 30 天，跟标签对不上，已按标签校正
 function timeCutoff(value: TimeFilter): Date | null {
     const now = new Date();
-    if (value === 'week') {
-        const day = now.getDay();                    // 周日是 0，换算成「周一为一周之始」
-        const backToMonday = day === 0 ? 6 : day - 1;
-        return new Date(now.getFullYear(), now.getMonth(), now.getDate() - backToMonday);
-    }
     if (value === 'month') return new Date(now.getFullYear(), now.getMonth(), 1);
     return null;
 }
@@ -684,7 +678,9 @@ export default function DashboardPage() {
                         </div>
                     </div>
 
-                    {/* Row 2: Category Filter */}
+                    {/* Row 2: 分类 + 上传人并排一行（原来各占一行，三行长得一样没有主次）
+                        二级分类是「创意」的下钻，跟着这一排走，另起一行 */}
+                    <div className="flex flex-wrap items-center gap-3">
                     <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
                         <button
                             onClick={() => setCategoryFilter(null)}
@@ -709,6 +705,33 @@ export default function DashboardPage() {
                                 {cat}({inspirations.filter(i => i.category === cat).length})
                             </button>
                         ))}
+                    </div>
+                        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
+                            <button
+                                onClick={() => setUserFilter(null)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                                    userFilter === null
+                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                }`}
+                            >
+                                全部({inspirations.length})
+                            </button>
+                            {getUsers().map((u) => (
+                                <button
+                                    key={u.id}
+                                    onClick={() => setUserFilter(u.id)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                                        userFilter === u.id
+                                            ? 'bg-indigo-600 text-white shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${userFilter === u.id ? 'bg-white' : getUserColor(u.id)}`} />
+                                    {u.name}({inspirations.filter(i => i.user_id === u.id).length})
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Row 3: Subcategory Filter (only for 创意) */}
@@ -739,36 +762,6 @@ export default function DashboardPage() {
                             ))}
                         </div>
                     )}
-
-                    {/* Row 4: User Filter（时间维度已升到第一行搜索左侧，见 D0-18） */}
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm overflow-x-auto w-fit">
-                            <button
-                                onClick={() => setUserFilter(null)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-                                    userFilter === null
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                                }`}
-                            >
-                                全部({inspirations.length})
-                            </button>
-                            {getUsers().map((u) => (
-                                <button
-                                    key={u.id}
-                                    onClick={() => setUserFilter(u.id)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                                        userFilter === u.id
-                                            ? 'bg-indigo-600 text-white shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                                    }`}
-                                >
-                                    <span className={`w-2 h-2 rounded-full shrink-0 ${userFilter === u.id ? 'bg-white' : getUserColor(u.id)}`} />
-                                    {u.name}({inspirations.filter(i => i.user_id === u.id).length})
-                                </button>
-                            ))}
-                        </div>
-                    </div>
 
                     {/* Row 3: 按后续动作筛选。选中态用该标签自己的实色底 + 白字，跟卡片角标一个语言 */}
                     <div className="flex items-start gap-2 flex-wrap">
@@ -1068,7 +1061,23 @@ export default function DashboardPage() {
                                         </div>
                                     </button>
                                 )}
-                                <button onClick={() => { setSelectedItem(null); setIsEditing(false); }} className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all">
+                                {/* 删除是破坏性操作：用红色实底说清后果，并跟关闭之间加一道分隔，
+                                    免得跟「关掉」挨着手滑。点下去仍有一次 confirm 兜底 */}
+                                {!isEditing && isOwner(selectedItem) && (
+                                    <button
+                                        onClick={() => handleDelete(selectedItem.id)}
+                                        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-red-600 text-white text-sm font-bold shadow-sm hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 transition-all"
+                                        title="删除这条灵感"
+                                    >
+                                        <Trash2 size={16} /> 删除
+                                    </button>
+                                )}
+                                <span className="w-px h-6 bg-slate-200 mx-1" aria-hidden />
+                                <button
+                                    onClick={() => { setSelectedItem(null); setIsEditing(false); }}
+                                    className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all"
+                                    title="关闭"
+                                >
                                     <X size={20} />
                                 </button>
                             </div>
@@ -1589,13 +1598,6 @@ export default function DashboardPage() {
                                         保存修改
                                     </button>
                                 </>
-                            ) : isOwner(selectedItem) ? (
-                                <button
-                                    onClick={() => handleDelete(selectedItem.id)}
-                                    className="h-12 w-full flex items-center justify-center gap-2 font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                                >
-                                    <Trash2 size={18} /> 删除灵感
-                                </button>
                             ) : (
                                 <div className="h-12 w-full flex items-center justify-center text-sm text-slate-400">
                                     由 {getOwnerName(selectedItem.user_id)} 分享
