@@ -30,6 +30,8 @@ import {
     Heart,
     Hash,
     CalendarRange,
+    ChevronLeft,
+    ChevronRight,
 } from 'lucide-react';
 import { getInspirations, Inspiration, deleteInspiration, updateInspiration, setFollowUp, toggleFavorite, fetchLinkTitle, getComments, addComment, deleteComment, Comment, MediaAsset, CATEGORIES, Category, SUBCATEGORIES, Subcategory, DESIGN_CATEGORY, SOURCE_OPTIONS, SourceOption, FOLLOW_UPS, FollowUp } from '@/lib/storage';
 import MushroomCardIcon from '@/components/MushroomCardIcon';
@@ -73,13 +75,18 @@ const TIME_FILTERS = [
     { value: 'month', label: '本月精选' },
 ] as const;
 
-type TimeFilter = (typeof TIME_FILTERS)[number]['value'];
+// 'custom' 不在上面的固定档位里，它由日历按钮选出来的具体年月驱动
+type TimeFilter = (typeof TIME_FILTERS)[number]['value'] | 'custom';
+type YearMonth = { y: number; m: number };   // m 用 0-11，跟 Date 保持一致，省得两套下标
 
-// 时间口径的单一真源。写「本周」就按自然周算（周一起），写「本月」就按自然月算——
-// 原来这两档算的是滚动 7 天 / 30 天，跟标签对不上，已按标签校正
-function timeCutoff(value: TimeFilter): Date | null {
+// 时间口径的单一真源。返回左闭右开区间，to 为 null 表示「到现在为止」。
+// 指定月份必须有右边界，否则选 5 月会把 6 月之后的也算进来
+function timeRange(value: TimeFilter, custom: YearMonth | null): { from: Date; to: Date | null } | null {
     const now = new Date();
-    if (value === 'month') return new Date(now.getFullYear(), now.getMonth(), 1);
+    if (value === 'month') return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: null };
+    if (value === 'custom' && custom) {
+        return { from: new Date(custom.y, custom.m, 1), to: new Date(custom.y, custom.m + 1, 1) };
+    }
     return null;
 }
 
@@ -109,6 +116,11 @@ export default function DashboardPage() {
     // 编辑态里拖拽排序附件用。第一个 = 头图
     const [dragIdx, setDragIdx] = useState<number | null>(null);
     const [followUpFilter, setFollowUpFilter] = useState<FollowUp | 'none' | null>(null);
+    const [customMonth, setCustomMonth] = useState<YearMonth | null>(null);
+    const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+    const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
+    // 换时间维度时让结果区闪一下：不给反馈的话，切过去看着像什么都没发生
+    const [refreshing, setRefreshing] = useState(false);
     const [favOnly, setFavOnly] = useState(false);
 
     const getOwnerName = (userId: string) => {
@@ -199,6 +211,39 @@ export default function DashboardPage() {
     };
 
     // 每个后续动作各有多少条，供筛选栏显示计数
+    // 淡出 → 换内容 → 淡入。内容其实是立刻换的，这层淡入淡出只是让人看见「刷新了」
+    const pulseResults = () => {
+        setRefreshing(true);
+        window.setTimeout(() => setRefreshing(false), 170);
+    };
+    const pickTimeFilter = (v: TimeFilter) => {
+        setCustomMonth(null);
+        setTimeFilter(v);
+        setMonthPickerOpen(false);
+        pulseResults();
+    };
+    const pickMonth = (y: number, m: number) => {
+        setCustomMonth({ y, m });
+        setTimeFilter('custom');
+        setMonthPickerOpen(false);
+        pulseResults();
+    };
+
+    // 每个年月各有多少条 + 数据覆盖的年份范围，供选月面板用
+    const monthStats = (() => {
+        const m = new Map<string, number>();
+        let min = new Date().getFullYear(), max = min;
+        inspirations.forEach(i => {
+            const d = new Date(i.createdAt);
+            const y = d.getFullYear();
+            if (y < min) min = y;
+            if (y > max) max = y;
+            const k = `${y}-${d.getMonth()}`;
+            m.set(k, (m.get(k) || 0) + 1);
+        });
+        return { counts: m, minYear: min, maxYear: max };
+    })();
+
     const followUpStats = (() => {
         const m = new Map<FollowUp | 'none', number>();
         inspirations.forEach(i => {
@@ -275,9 +320,12 @@ export default function DashboardPage() {
         if (favOnly) {
             result = result.filter(i => i.favorited);
         }
-        const cutoff = timeCutoff(timeFilter);
-        if (cutoff) {
-            result = result.filter(i => new Date(i.createdAt) >= cutoff);
+        const range = timeRange(timeFilter, customMonth);
+        if (range) {
+            result = result.filter(i => {
+                const t = new Date(i.createdAt);
+                return t >= range.from && (!range.to || t < range.to);
+            });
         }
         if (search) {
             const q = search.toLowerCase();
@@ -291,7 +339,7 @@ export default function DashboardPage() {
             );
         }
         setFiltered(result);
-    }, [search, inspirations, categoryFilter, subcategoryFilter, userFilter, timeFilter, followUpFilter, favOnly]);
+    }, [search, inspirations, categoryFilter, subcategoryFilter, userFilter, timeFilter, customMonth, followUpFilter, favOnly]);
 
     const handleDelete = async (id: string) => {
         if (confirm('确定要删除这条灵感吗？删除后将无法恢复。')) {
@@ -621,24 +669,99 @@ export default function DashboardPage() {
                             所以跟搜索同级放最上面一行。
                             材质上刻意跟下面的属性筛选拉开：下面是平贴的 pill、选中＝红色实心；
                             这里是凹槽轨道 + 抬起的白色滑块。层级靠材质区分，不靠加大字号硬凹。 */}
-                        <div className="flex items-center gap-1 h-11 px-1 bg-[#f4f1f0] border border-[#e7e0de] rounded-xl shrink-0 w-full lg:w-auto">
-                            <CalendarRange size={16} className="text-slate-400 mx-2 shrink-0" />
-                            {TIME_FILTERS.map((tf) => {
-                                const active = timeFilter === tf.value;
-                                return (
-                                    <button
-                                        key={tf.value}
-                                        onClick={() => setTimeFilter(tf.value)}
-                                        className={`flex-1 lg:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-sm font-bold whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 ${
-                                            active
-                                                ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-900/5'
-                                                : 'text-slate-600 hover:text-slate-900'
-                                        }`}
-                                    >
-                                        {tf.label}
-                                    </button>
-                                );
-                            })}
+                        <div className="relative shrink-0 w-full lg:w-auto">
+                            <div className="flex items-center gap-1 h-11 px-1 bg-[#f4f1f0] border border-[#e7e0de] rounded-xl">
+                                {/* 日历按钮＝翻旧账的入口：点开按年月挑，挑完变成轨道里的第三档 */}
+                                <button
+                                    onClick={() => { setPickerYear(customMonth?.y ?? new Date().getFullYear()); setMonthPickerOpen(v => !v); }}
+                                    title="按年月挑"
+                                    className={`shrink-0 w-9 h-9 rounded-lg inline-flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 ${
+                                        monthPickerOpen
+                                            ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-900/5'
+                                            : 'text-slate-500 hover:text-slate-900 hover:bg-white/70'
+                                    }`}
+                                >
+                                    <CalendarRange size={16} />
+                                </button>
+                                {TIME_FILTERS.map((tf) => {
+                                    const active = timeFilter === tf.value;
+                                    return (
+                                        <button
+                                            key={tf.value}
+                                            onClick={() => pickTimeFilter(tf.value)}
+                                            className={`flex-1 lg:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-sm font-bold whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 ${
+                                                active
+                                                    ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-900/5'
+                                                    : 'text-slate-600 hover:text-slate-900'
+                                            }`}
+                                        >
+                                            {tf.label}
+                                        </button>
+                                    );
+                                })}
+                                {/* 选了具体月份才出现的第三档，点 × 回到「全部」 */}
+                                {customMonth && (
+                                    <span className="inline-flex items-center gap-1 h-9 pl-3 pr-1.5 rounded-lg bg-white text-indigo-700 shadow-sm ring-1 ring-slate-900/5 text-sm font-bold whitespace-nowrap">
+                                        {customMonth.y} 年 {customMonth.m + 1} 月
+                                        <button
+                                            onClick={() => pickTimeFilter('all')}
+                                            title="取消这个月份"
+                                            className="w-5 h-5 rounded-full inline-flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                                        >
+                                            <X size={13} />
+                                        </button>
+                                    </span>
+                                )}
+                            </div>
+
+                            {monthPickerOpen && (
+                                <>
+                                    {/* 点面板外面收起来 */}
+                                    <div className="fixed inset-0 z-30" onClick={() => setMonthPickerOpen(false)} />
+                                    <div className="absolute z-40 mt-2 left-0 w-[268px] bg-white border border-slate-200 rounded-xl shadow-xl p-3 animate-in fade-in slide-in-from-top-1 duration-150">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <button
+                                                onClick={() => setPickerYear(y => Math.max(monthStats.minYear, y - 1))}
+                                                disabled={pickerYear <= monthStats.minYear}
+                                                className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                                            >
+                                                <ChevronLeft size={18} />
+                                            </button>
+                                            <span className="text-sm font-bold text-slate-900">{pickerYear} 年</span>
+                                            <button
+                                                onClick={() => setPickerYear(y => Math.min(monthStats.maxYear, y + 1))}
+                                                disabled={pickerYear >= monthStats.maxYear}
+                                                className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                                            >
+                                                <ChevronRight size={18} />
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-1.5">
+                                            {Array.from({ length: 12 }, (_, m) => {
+                                                const n = monthStats.counts.get(`${pickerYear}-${m}`) || 0;
+                                                const on = customMonth?.y === pickerYear && customMonth?.m === m;
+                                                return (
+                                                    <button
+                                                        key={m}
+                                                        onClick={() => pickMonth(pickerYear, m)}
+                                                        disabled={n === 0}
+                                                        title={n === 0 ? '这个月没有内容' : `${n} 条`}
+                                                        className={`h-9 rounded-lg text-sm font-bold transition-all ${
+                                                            on
+                                                                ? 'bg-indigo-600 text-white shadow-sm'
+                                                                : n === 0
+                                                                    ? 'text-slate-300 cursor-not-allowed'
+                                                                    : 'text-slate-700 hover:bg-slate-100'
+                                                        }`}
+                                                    >
+                                                        {m + 1} 月
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <div className="flex-1 min-w-[180px] relative group">
@@ -807,7 +930,13 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Content Grid/List */}
+                {/* Content Grid/List
+                    切时间维度时整块淡出再淡入。内容其实是立刻换的，这层动画只为让人看见「刷新了」——
+                    不给反馈的话，切到一个结果差不多的档位会以为没点上。
+                    只动 opacity/transform，不动布局属性；关了动效的用户直接跳过 */}
+                <div className={`transition-all duration-150 motion-reduce:transition-none ${
+                    refreshing ? 'opacity-30 translate-y-1 motion-reduce:opacity-100 motion-reduce:translate-y-0' : 'opacity-100 translate-y-0'
+                }`}>
                 {filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-32 text-slate-400">
                         <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
@@ -1007,6 +1136,7 @@ export default function DashboardPage() {
                         )}
                     </>
                 )}
+                </div>
             </main>
 
             {/* Detail Sheet (Soft Modern) */}
