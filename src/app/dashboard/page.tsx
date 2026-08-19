@@ -1626,7 +1626,7 @@ export default function DashboardPage() {
 
                                             {selectedItem.design_insight && (
                                                 <div className="prose prose-slate">
-                                                    <h3 className="text-xs font-bold text-slate-400 tracking-widest mb-3">设计启示</h3>
+                                                    <h3 className="text-xs font-bold text-indigo-600 tracking-widest mb-3">设计启示</h3>
                                                     <p className="text-slate-600 leading-relaxed text-lg whitespace-pre-wrap">
                                                         {selectedItem.design_insight}
                                                     </p>
