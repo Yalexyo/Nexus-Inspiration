@@ -72,7 +72,7 @@ function FollowUpBadge({ value, size = 'md' }: { value: FollowUp | null; size?: 
 
 const TIME_FILTERS = [
     { value: 'all',   label: '全部' },
-    { value: 'month', label: '本月精选' },
+    { value: 'month', label: '本月' },
 ] as const;
 
 // 'custom' 不在上面的固定档位里，它由日历按钮选出来的具体年月驱动
@@ -669,7 +669,7 @@ export default function DashboardPage() {
                             所以跟搜索同级放最上面一行。
                             材质上刻意跟下面的属性筛选拉开：下面是平贴的 pill、选中＝红色实心；
                             这里是凹槽轨道 + 抬起的白色滑块。层级靠材质区分，不靠加大字号硬凹。 */}
-                        <div className="relative shrink-0 w-full lg:w-auto">
+                        <div className="relative shrink-0">
                             <div className="flex items-center gap-1 h-11 px-1 bg-[#f4f1f0] border border-[#e7e0de] rounded-xl">
                                 {/* 日历按钮＝翻旧账的入口：点开按年月挑，挑完变成轨道里的第三档 */}
                                 <button
@@ -695,7 +695,7 @@ export default function DashboardPage() {
                                         <button
                                             key={tf.value}
                                             onClick={() => pickTimeFilter(tf.value)}
-                                            className={`flex-1 lg:flex-none inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-sm font-bold whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 ${
+                                            className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-sm font-bold whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 ${
                                                 active
                                                     ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-slate-900/5'
                                                     : 'text-slate-600 hover:text-slate-900'
@@ -1209,12 +1209,15 @@ export default function DashboardPage() {
                                     </button>
                                 )}
                                 <span className="w-px h-6 bg-slate-200 mx-1" aria-hidden />
+                                {/* 关闭常驻一个浅底：它是全屏详情唯一的出口，本来就该长得像按钮。
+                                    另一个作用是消掉「幽灵 hover」——关掉上一张卡后光标就停在这个位置，
+                                    再打开下一张时 X 正好长在光标底下，底色像凭空冒出来。常态有底就没这问题 */}
                                 <button
                                     onClick={() => { setSelectedItem(null); setIsEditing(false); }}
-                                    className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all"
+                                    className="w-9 h-9 inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-500 ring-1 ring-slate-200/70 hover:bg-slate-200 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 transition-colors"
                                     title="关闭"
                                 >
-                                    <X size={20} />
+                                    <X size={18} />
                                 </button>
                             </div>
                         </header>
